@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mesa de Ayuda</title>
+    <link rel="stylesheet" href="./sidepanel.css" />
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <!-- Encabezado Principal -->
+      <header class="app-header">
+        <div class="brand-container">
+          <div class="brand-icon">M</div>
+          <div class="brand-info">
+            <h1 class="brand-title">Mesa de Ayuda</h1>
+            <p class="brand-subtitle">Asistente de redacción para soporte técnico</p>
+          </div>
+        </div>
+        <div class="header-status">
+          <span class="status-indicator-dot" title="Sistema operativo"></span>
+          <span class="status-label-badge">Activo</span>
+        </div>
+      </header>
+
+      <!-- Barra de Navegación -->
+      <nav class="nav-bar" role="tablist" aria-label="Navegación principal">
+        <button type="button" class="nav-tab-btn active" data-tab="asistente" role="tab" aria-selected="true">
+          <span class="nav-tab-text">Asistente</span>
+        </button>
+        <button type="button" class="nav-tab-btn" data-tab="biblioteca" role="tab" aria-selected="false">
+          <span class="nav-tab-text">Biblioteca</span>
+        </button>
+        <button type="button" class="nav-tab-btn" data-tab="historial" role="tab" aria-selected="false">
+          <span class="nav-tab-text">Historial</span>
+        </button>
+        <button type="button" class="nav-tab-btn" data-tab="guardados" role="tab" aria-selected="false">
+          <span class="nav-tab-text">Guardados</span>
+        </button>
+        <button type="button" class="nav-tab-btn" data-tab="configuracion" role="tab" aria-selected="false">
+          <span class="nav-tab-text">Configuración</span>
+        </button>
+      </nav>
+
+      <!-- Contenedor Principal de Vistas -->
+      <main class="main-content">
+        <!-- 1. VISTA ASISTENTE -->
+        <section id="view-asistente" class="view-panel view-active">
+          <!-- Entrada de Texto -->
+          <div class="card-section">
+            <div class="section-label-row">
+              <label for="input-text" class="field-label">Texto original</label>
+              <span id="char-count" class="char-counter">0 / 5000 caracteres</span>
+            </div>
+            <textarea
+              id="input-text"
+              class="app-textarea input-textarea"
+              placeholder="Escribe o pega aquí el texto que deseas procesar..."
+              maxlength="5000"
+              rows="4"
+            ></textarea>
+
+            <!-- Opciones Adicionales -->
+            <div class="options-grid">
+              <div class="option-field">
+                <label for="select-tone" class="field-sublabel">Tono de respuesta:</label>
+                <select id="select-tone" class="app-select">
+                  <option value="profesional">Profesional</option>
+                  <option value="formal">Formal</option>
+                  <option value="amable">Amable</option>
+                  <option value="tecnico">Técnico</option>
+                  <option value="casual">Casual</option>
+                </select>
+              </div>
+
+              <div id="group-paraphrase-level" class="option-field">
+                <label for="select-paraphrase-level" class="field-sublabel">Nivel de parafraseo:</label>
+                <select id="select-paraphrase-level" class="app-select">
+                  <option value="suave">Suave</option>
+                  <option value="medio" selected>Medio</option>
+                  <option value="completo">Completo</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Acciones Principales -->
+            <div class="actions-button-grid">
+              <button type="button" class="action-btn btn-action-primary" data-action="corregir">
+                <span class="btn-text">Corregir</span>
+              </button>
+              <button type="button" class="action-btn btn-action-purple" data-action="parafrasear">
+                <span class="btn-text">Parafrasear</span>
+              </button>
+              <button type="button" class="action-btn btn-action-purple" data-action="profesionalizar">
+                <span class="btn-text">Profesionalizar</span>
+              </button>
+              <button type="button" class="action-btn btn-action-secondary" data-action="resumir">
+                <span class="btn-text">Resumir</span>
+              </button>
+              <button type="button" class="action-btn btn-action-secondary" data-action="responder">
+                <span class="btn-text">Responder</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Indicador de Carga Simulado -->
+          <div id="loading-indicator" class="loading-bar-container">
+            <div class="spinner"></div>
+            <span class="loading-text">Procesando texto con asistente local...</span>
+          </div>
+
+          <!-- Sección de Resultado -->
+          <div id="result-section" class="card-section result-box">
+            <div class="section-label-row">
+              <label for="result-text" class="field-label result-label">Resultado</label>
+              <span class="status-pill-ready">Listo</span>
+            </div>
+            <textarea
+              id="result-text"
+              class="app-textarea result-textarea"
+              placeholder="El resultado procesado aparecerá aquí..."
+              rows="5"
+            ></textarea>
+
+            <!-- Acciones del Resultado -->
+            <div class="result-actions-row">
+              <div class="result-left-actions">
+                <button type="button" id="btn-copy-result" class="btn-outline">
+                  <span>Copiar</span>
+                </button>
+                <button type="button" id="btn-save-result" class="btn-outline">
+                  <span>Guardar</span>
+                </button>
+                <button type="button" id="btn-regenerate" class="btn-outline">
+                  <span>Regenerar</span>
+                </button>
+              </div>
+              <button type="button" id="btn-clear-all" class="btn-danger-link">
+                <span>Limpiar</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. VISTA BIBLIOTECA -->
+        <section id="view-biblioteca" class="view-panel">
+          <div class="panel-intro-header">
+            <h2 class="view-heading">Biblioteca de Plantillas</h2>
+            <p class="view-subheading">Respuestas predeterminadas para atención y soporte técnico.</p>
+          </div>
+
+          <div class="search-box-wrapper">
+            <input
+              type="search"
+              id="library-search"
+              class="app-input-search"
+              placeholder="Buscar por categoría, título o contenido..."
+            />
+          </div>
+
+          <div id="library-categories" class="categories-chips-container"></div>
+          <div id="library-items-list" class="cards-list-container"></div>
+        </section>
+
+        <!-- 3. VISTA HISTORIAL -->
+        <section id="view-historial" class="view-panel">
+          <div class="panel-intro-header panel-header-flex">
+            <div>
+              <h2 class="view-heading">Historial de Consultas</h2>
+              <p class="view-subheading">Registro de transformaciones realizadas en esta sesión.</p>
+            </div>
+            <button type="button" id="btn-clear-history" class="btn-danger-outline btn-sm">
+              Vaciar historial
+            </button>
+          </div>
+
+          <div id="history-items-list" class="cards-list-container"></div>
+        </section>
+
+        <!-- 4. VISTA GUARDADOS -->
+        <section id="view-guardados" class="view-panel">
+          <div class="panel-intro-header">
+            <h2 class="view-heading">Textos y Plantillas Guardadas</h2>
+            <p class="view-subheading">Acceso rápido a tus textos preferidos para soporte.</p>
+          </div>
+
+          <div id="saved-items-list" class="cards-list-container"></div>
+        </section>
+
+        <!-- 5. VISTA CONFIGURACIÓN -->
+        <section id="view-configuracion" class="view-panel">
+          <div class="panel-intro-header">
+            <h2 class="view-heading">Configuración General</h2>
+            <p class="view-subheading">Personaliza las preferencias de la extensión.</p>
+          </div>
+
+          <div class="card-section settings-card">
+            <div class="setting-item">
+              <label for="settings-default-tone" class="setting-label">Tono predeterminado</label>
+              <p class="setting-description">Tono aplicado por defecto al abrir el Asistente.</p>
+              <select id="settings-default-tone" class="app-select">
+                <option value="profesional">Profesional</option>
+                <option value="formal">Formal</option>
+                <option value="amable">Amable</option>
+                <option value="tecnico">Técnico</option>
+                <option value="casual">Casual</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="settings-default-paraphrase" class="setting-label">Nivel de parafraseo predeterminado</label>
+              <p class="setting-description">Intensidad de modificación léxica sugerida.</p>
+              <select id="settings-default-paraphrase" class="app-select">
+                <option value="suave">Suave</option>
+                <option value="medio">Medio</option>
+                <option value="completo">Completo</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="settings-theme" class="setting-label">Tema visual</label>
+              <p class="setting-description">Apariencia de la interfaz del panel lateral.</p>
+              <select id="settings-theme" class="app-select">
+                <option value="system">Adaptar al sistema</option>
+                <option value="light">Modo Claro</option>
+                <option value="dark">Modo Oscuro</option>
+              </select>
+            </div>
+
+            <div class="setting-item setting-switch-row">
+              <div>
+                <label for="settings-confirm-clear" class="setting-label">Confirmar antes de limpiar</label>
+                <p class="setting-description">Muestra un mensaje de advertencia antes de borrar el texto y resultado.</p>
+              </div>
+              <input type="checkbox" id="settings-confirm-clear" class="app-checkbox" />
+            </div>
+
+            <div class="settings-actions">
+              <button type="button" id="btn-save-settings" class="btn-primary-action btn-full">
+                Guardar preferencias
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Pie de página -->
+      <footer class="app-footer">
+        <span>Mesa de Ayuda v1.0.0 &bull; Asistente Local (Fase 2)</span>
+      </footer>
+    </div>
+
+    <!-- Contenedor dinámico de notificaciones -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <script type="module" src="./sidepanel.ts"></script>
+  </body>
+</html>
