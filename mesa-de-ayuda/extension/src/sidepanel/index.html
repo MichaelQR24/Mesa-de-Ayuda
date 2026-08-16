@@ -241,12 +241,28 @@
               </button>
             </div>
           </div>
+
+          <!-- Diagnóstico de Backend Local (Fase 3) -->
+          <div class="card-section backend-diag-card">
+            <div class="setting-item">
+              <h3 class="setting-label">Diagnóstico de Conexión Backend</h3>
+              <p class="setting-description">Prueba la comunicación directa entre el Side Panel y el servidor Express local en <code>http://localhost:3000</code>.</p>
+            </div>
+            <div class="backend-diag-actions">
+              <button type="button" id="btn-test-backend" class="btn-outline btn-full">
+                <span>⚡ Probar backend</span>
+              </button>
+            </div>
+            <div id="backend-status-box" class="backend-status-box">
+              <span class="backend-status-text">Estado: Esperando prueba de conexión...</span>
+            </div>
+          </div>
         </section>
       </main>
 
       <!-- Pie de página -->
       <footer class="app-footer">
-        <span>Mesa de Ayuda v1.0.0 &bull; Asistente Local (Fase 2)</span>
+        <span>Mesa de Ayuda v1.0.0 &bull; Fase 3 (Backend Base)</span>
       </footer>
     </div>
 

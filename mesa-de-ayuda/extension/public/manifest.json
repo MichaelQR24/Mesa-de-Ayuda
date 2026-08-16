@@ -7,6 +7,9 @@
     "sidePanel",
     "storage"
   ],
+  "host_permissions": [
+    "http://localhost:3000/*"
+  ],
   "action": {
     "default_title": "Abrir Mesa de Ayuda",
     "default_icon": {

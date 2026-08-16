@@ -850,6 +850,36 @@ body {
   background-color: var(--bg-card);
 }
 
+/* Diagnóstico Backend */
+.backend-diag-card {
+  border-left: 3px solid var(--color-blue);
+  gap: 12px;
+}
+
+.backend-status-box {
+  padding: 8px 12px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.backend-status-box.status-connected {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success);
+  color: var(--color-success-text);
+  font-weight: 600;
+}
+
+.backend-status-box.status-error {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger-text);
+  font-weight: 600;
+}
+
 /* Toast Container & Notificaciones */
 .toast-container {
   position: fixed;
