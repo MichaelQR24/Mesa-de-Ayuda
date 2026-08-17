@@ -2,6 +2,11 @@ import Groq from 'groq-sdk';
 import { env } from '../config/env.js';
 import { AiProcessResult, TokenUsage } from '../types/ai.types.js';
 
+export interface GroqCompletionOptions {
+  temperature?: number;
+  maxTokens?: number;
+}
+
 export class GroqService {
   private client: Groq | null = null;
   private readonly defaultTimeoutMs = 15000; // 15 segundos de timeout
@@ -20,10 +25,17 @@ export class GroqService {
     return this.client;
   }
 
-  async generateCompletion(systemPrompt: string, userText: string): Promise<AiProcessResult> {
+  async generateCompletion(
+    systemPrompt: string,
+    userText: string,
+    options: GroqCompletionOptions = {}
+  ): Promise<AiProcessResult> {
     const groq = this.getClient();
     const model = env.GROQ_MODEL || 'llama-3.1-8b-instant';
     const startTime = Date.now();
+
+    const temperature = options.temperature ?? 0.1;
+    const maxTokens = options.maxTokens ?? 1024;
 
     try {
       const response = await groq.chat.completions.create({
@@ -32,8 +44,8 @@ export class GroqService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userText },
         ],
-        temperature: 0.2, // Temperatura baja para alta fidelidad y consistencia
-        max_tokens: 1024,
+        temperature,
+        max_tokens: maxTokens,
       });
 
       const latencyMs = Date.now() - startTime;
@@ -55,7 +67,7 @@ export class GroqService {
       }
 
       if (env.NODE_ENV !== 'test') {
-        console.log(`[AI] Solicitud completada exitosamente en ${latencyMs}ms | Modelo: ${model} | Tokens: ${usage?.totalTokens ?? 'N/A'}`);
+        console.log(`[AI] Completado en ${latencyMs}ms | Tokens: ${usage?.totalTokens ?? 'N/A'}`);
       }
 
       return {
@@ -67,7 +79,7 @@ export class GroqService {
     } catch (error: unknown) {
       const latencyMs = Date.now() - startTime;
       if (env.NODE_ENV !== 'test') {
-        console.error(`[AI] Error en llamada a Groq tras ${latencyMs}ms:`, error instanceof Error ? error.message : error);
+        console.error(`[AI] Error en Groq tras ${latencyMs}ms:`, error instanceof Error ? error.message : error);
       }
       throw error;
     }

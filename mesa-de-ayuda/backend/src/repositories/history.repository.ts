@@ -39,10 +39,12 @@ export class HistoryRepository {
 
     const where = userId ? { userId } : {};
 
+    const boundedLimit = Math.min(Math.max(limit, 1), 100);
+
     const [items, total] = await Promise.all([
       prisma.aiHistory.findMany({
         where,
-        take: limit,
+        take: boundedLimit,
         skip: offset,
         orderBy: { createdAt: 'desc' },
       }),

@@ -1,0 +1,30 @@
+=====================================================
+MESA DE AYUDA - GUÍA RÁPIDA DE INSTALACIÓN (v1.0.0)
+=====================================================
+
+1. GUARDA ESTA CARPETA
+   Guarda esta carpeta ("mesa-de-ayuda-v1.0.0") en una ubicación
+   permanente de tu PC (por ejemplo en Documentos o en tu carpeta de usuario).
+   ¡IMPORTANTE: No muevas ni borres esta carpeta después de instalarla!
+
+2. ABRIR EXTENSIONES EN CHROME
+   Abre Google Chrome y escribe en la barra de direcciones:
+   chrome://extensions
+
+3. ACTIVAR MODO DESARROLLADOR
+   Activa el interruptor "Modo de desarrollador" en la esquina superior derecha.
+
+4. CARGAR LA EXTENSIÓN
+   Haz clic en el botón "Cargar extensión sin empaquetar" (o "Cargar descomprimida")
+   en la esquina superior izquierda.
+   Selecciona exactamente esta carpeta ("mesa-de-ayuda-v1.0.0").
+
+5. FIJAR EL ICONO
+   Haz clic en el icono de la pieza de rompecabezas (Extensiones) en la barra de Chrome
+   y fija "Mesa de Ayuda" para tenerla siempre visible.
+
+6. INICIAR SESIÓN
+   Abre el panel lateral, ingresa con tu correo corporativo y tu contraseña
+   proporcionada por el administrador.
+
+Soporte Técnico: Contactar al administrador del sistema.

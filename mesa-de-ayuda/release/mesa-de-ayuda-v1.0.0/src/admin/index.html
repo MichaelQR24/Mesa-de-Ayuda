@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mesa de Ayuda - Panel de Administración</title>
+  <script type="module" crossorigin src="../../assets/admin-B1tT2U4l.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-service-DVtUeJGY.js">
+  <link rel="stylesheet" crossorigin href="../../assets/admin-kb7Jks3J.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">M</div>
+      <div>
+        <div class="sidebar-title">Mesa de Ayuda</div>
+        <div class="sidebar-subtitle">Panel Administrativo</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button type="button" class="nav-item active" data-view="resumen">
+        <span>📊</span> Resumen
+      </button>
+      <button type="button" class="nav-item" data-view="usuarios">
+        <span>👥</span> Usuarios
+      </button>
+      <button type="button" class="nav-item" data-view="consumo">
+        <span>⚡</span> Consumo de IA
+      </button>
+      <button type="button" class="nav-item" data-view="biblioteca">
+        <span>📚</span> Biblioteca Compartida
+      </button>
+      <button type="button" class="nav-item" data-view="actividad">
+        <span>📋</span> Actividad y Auditoría
+      </button>
+      <button type="button" class="nav-item" data-view="seguridad">
+        <span>🔒</span> Seguridad y Sesiones
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>Mesa de Ayuda v1.0.0 &bull; Admin</span>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <h1 id="page-title" class="topbar-title">Resumen General</h1>
+      <div class="topbar-actions">
+        <div class="admin-user-badge">
+          <span id="admin-display-name" class="admin-name">Administrador</span>
+          <span class="badge-role-admin">ADMIN</span>
+        </div>
+        <button type="button" id="btn-back-to-assistant" class="btn-topbar" title="Volver al Side Panel del Asistente">
+          <span>💬 Volver al Asistente</span>
+        </button>
+        <button type="button" id="btn-admin-logout" class="btn-topbar btn-topbar-logout" title="Cerrar sesión">
+          <span>⏻ Salir</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="admin-content-view">
+      <!-- 1. VISTA RESUMEN -->
+      <section id="view-resumen" class="view-section active">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Usuarios Totales</span>
+              <span class="kpi-icon">👥</span>
+            </div>
+            <div id="kpi-users-total" class="kpi-value">-</div>
+            <span id="kpi-users-sub" class="kpi-subtext">- activos / - inactivos</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Consultas IA Hoy</span>
+              <span class="kpi-icon">⚡</span>
+            </div>
+            <div id="kpi-requests-today" class="kpi-value">-</div>
+            <span class="kpi-subtext">Registradas en las últimas 24h</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Consultas Este Mes</span>
+              <span class="kpi-icon">📈</span>
+            </div>
+            <div id="kpi-requests-month" class="kpi-value">-</div>
+            <span class="kpi-subtext">Acumulado mes en curso</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Tokens Consumidos (Mes)</span>
+              <span class="kpi-icon">🪙</span>
+            </div>
+            <div id="kpi-tokens-month" class="kpi-value">-</div>
+            <span id="kpi-cost-month" class="kpi-subtext">Costo estimado: $0.00 USD</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Plantillas Compartidas</span>
+              <span class="kpi-icon">📚</span>
+            </div>
+            <div id="kpi-shared-templates" class="kpi-value">-</div>
+            <span class="kpi-subtext">Disponibles para todo el equipo</span>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header-row">
+            <h2 class="table-title">Top Consumo Reciente</h2>
+            <button type="button" class="btn-action-sm" id="btn-refresh-summary">Actualizar datos</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Consultas (Mes)</th>
+                <th>Tokens (Mes)</th>
+                <th>Límite Mensual</th>
+                <th>Uso %</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-top-usage">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Cargando datos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. VISTA USUARIOS -->
+      <section id="view-usuarios" class="view-section">
+        <div class="table-card">
+          <div class="table-header-row">
+            <div>
+              <h2 class="table-title">Gestión de Usuarios</h2>
+            </div>
+            <div class="table-filters">
+              <input type="search" id="filter-user-search" class="admin-input-search" placeholder="Buscar por nombre o correo..." />
+              <select id="filter-user-role" class="admin-select-filter">
+                <option value="">Todos los roles</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="USER">USER</option>
+              </select>
+              <select id="filter-user-status" class="admin-select-filter">
+                <option value="">Todos los estados</option>
+                <option value="ACTIVE">Activo</option>
+                <option value="INACTIVE">Inactivo</option>
+              </select>
+              <button type="button" id="btn-open-create-user" class="btn-primary">
+                + Nuevo Usuario
+              </button>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo Electrónico</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Límite Tokens</th>
+                <th>Último Acceso</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-users">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Cargando usuarios...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3. VISTA CONSUMO -->
+      <section id="view-consumo" class="view-section">
+        <div class="table-card">
+          <div class="table-header-row">
+            <div>
+              <h2 class="table-title">Consumo de IA y Límites Mensuales</h2>
+            </div>
+            <button type="button" class="btn-action-sm" id="btn-refresh-usage">Actualizar métricas</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Consultas Hoy</th>
+                <th>Consultas Mes</th>
+                <th>Tokens Entrada</th>
+                <th>Tokens Salida</th>
+                <th>Total Tokens (Mes)</th>
+                <th>Límite Mensual</th>
+                <th>Costo Estimado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-usage">
+              <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">Cargando métricas de consumo...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. VISTA BIBLIOTECA COMPARTIDA -->
+      <section id="view-biblioteca" class="view-section">
+        <div class="table-card">
+          <div class="table-header-row">
+            <div>
+              <h2 class="table-title">Plantillas Compartidas para el Equipo</h2>
+            </div>
+            <div class="table-filters">
+              <button type="button" id="btn-open-create-template" class="btn-primary">
+                + Nueva Plantilla Compartida
+              </button>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Categoría</th>
+                <th>Contenido (Extracto)</th>
+                <th>Fecha de Creación</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-shared-library">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Cargando biblioteca compartida...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 5. VISTA ACTIVIDAD Y AUDITORÍA -->
+      <section id="view-actividad" class="view-section">
+        <div class="table-card">
+          <div class="table-header-row">
+            <div>
+              <h2 class="table-title">Registro de Auditoría de Acciones</h2>
+            </div>
+            <div class="table-filters">
+              <select id="filter-audit-action" class="admin-select-filter">
+                <option value="">Todas las acciones</option>
+                <option value="USER_CREATED">Usuario Creado</option>
+                <option value="USER_UPDATED">Usuario Editado</option>
+                <option value="USER_ROLE_CHANGED">Rol Cambiado</option>
+                <option value="USER_ACTIVATED">Usuario Activado</option>
+                <option value="USER_DEACTIVATED">Usuario Desactivado</option>
+                <option value="USER_PASSWORD_RESET">Contraseña Reseteada</option>
+                <option value="USER_LIMIT_CHANGED">Límite Actualizado</option>
+                <option value="SHARED_TEMPLATE_CREATED">Plantilla Creada</option>
+                <option value="SHARED_TEMPLATE_DELETED">Plantilla Eliminada</option>
+                <option value="SESSIONS_REVOKED">Sesiones Revocadas</option>
+              </select>
+              <button type="button" class="btn-action-sm" id="btn-refresh-audit">Actualizar</button>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Administrador</th>
+                <th>Acción Realizada</th>
+                <th>Tipo de Objeto</th>
+                <th>Detalles</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-audit">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Cargando registros de auditoría...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 6. VISTA SEGURIDAD Y SESIONES -->
+      <section id="view-seguridad" class="view-section">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Sesiones Activas</span>
+              <span class="kpi-icon">🔑</span>
+            </div>
+            <div id="kpi-sessions-active" class="kpi-value">-</div>
+            <span class="kpi-subtext">Tokens de refresco vigentes</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Sesiones Revocadas</span>
+              <span class="kpi-icon">🚫</span>
+            </div>
+            <div id="kpi-sessions-revoked" class="kpi-value">-</div>
+            <span class="kpi-subtext">Tokens cerrados o invalidados</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Duración Access Token</span>
+              <span class="kpi-icon">⏱️</span>
+            </div>
+            <div class="kpi-value">15 min</div>
+            <span class="kpi-subtext">En memoria aislada</span>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Algoritmo de Contraseñas</span>
+              <span class="kpi-icon">🛡️</span>
+            </div>
+            <div class="kpi-value">Argon2id</div>
+            <span class="kpi-subtext">Máxima resistencia criptográfica</span>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header-row">
+            <h2 class="table-title">Control de Sesiones de Usuarios</h2>
+            <p class="field-hint">Permite al administrador revocar de forma inmediata todas las sesiones activas de cualquier usuario.</p>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Acción de Seguridad</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-sessions-users">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Cargando usuarios...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- MODALES -->
+
+  <!-- Modal: Crear Usuario -->
+  <div id="modal-create-user" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Crear Nuevo Usuario</h3>
+        <button type="button" class="btn-modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-create-user">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="cu-displayName">Nombre Completo</label>
+            <input type="text" id="cu-displayName" class="form-input" placeholder="Ej. Juan Pérez" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cu-email">Correo Electrónico</label>
+            <input type="email" id="cu-email" class="form-input" placeholder="usuario@soporte.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cu-password">Contraseña Temporal</label>
+            <input type="password" id="cu-password" class="form-input" placeholder="Mínimo 10 caracteres (1 letra y 1 número)" required />
+            <span class="field-hint">El usuario deberá cambiarla obligatoriamente en su primer inicio de sesión.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cu-role">Rol Asignado</label>
+            <select id="cu-role" class="form-select">
+              <option value="USER" selected>USER (Agente Regular)</option>
+              <option value="ADMIN">ADMIN (Acceso Completo)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cu-limit">Límite Mensual de Tokens (Opcional)</label>
+            <input type="number" id="cu-limit" class="form-input" placeholder="Ej. 50000 (Dejar vacío para sin límite)" min="1" max="10000000" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-topbar" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn-primary" id="btn-submit-create-user">Crear Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Usuario -->
+  <div id="modal-edit-user" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Editar Usuario</h3>
+        <button type="button" class="btn-modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-edit-user">
+        <input type="hidden" id="eu-id" />
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="eu-displayName">Nombre Completo</label>
+            <input type="text" id="eu-displayName" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="eu-role">Rol</label>
+            <select id="eu-role" class="form-select">
+              <option value="USER">USER (Agente Regular)</option>
+              <option value="ADMIN">ADMIN (Acceso Completo)</option>
+            </select>
+            <span class="field-hint" id="eu-role-warning" style="display: none; color: var(--color-warning-text);">⚠️ Este usuario obtendrá acceso administrativo total.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-topbar" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Reset Contraseña -->
+  <div id="modal-reset-password" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Resetear Contraseña</h3>
+        <button type="button" class="btn-modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-reset-password">
+        <input type="hidden" id="rp-id" />
+        <div class="modal-body">
+          <p id="rp-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></p>
+          <div class="form-group">
+            <label class="form-label" for="rp-password">Nueva Contraseña Temporal</label>
+            <input type="password" id="rp-password" class="form-input" placeholder="Mínimo 10 caracteres (1 letra y 1 número)" required />
+            <span class="field-hint">Se revocarán todas sus sesiones activas y deberá cambiar la clave al ingresar.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-topbar" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn-primary">Actualizar Contraseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Configurar Límite de Tokens -->
+  <div id="modal-limit" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Configurar Límite Mensual de Tokens</h3>
+        <button type="button" class="btn-modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-limit">
+        <input type="hidden" id="limit-id" />
+        <div class="modal-body">
+          <p id="limit-user-info" style="font-size: 0.85rem; color: var(--text-secondary);"></p>
+          <div class="form-group">
+            <label class="form-label" for="limit-input">Límite de Tokens (Mes en curso)</label>
+            <input type="number" id="limit-input" class="form-input" placeholder="Ej. 50000" min="0" max="10000000" />
+            <span class="field-hint">Introduce 0 o deja el campo vacío para eliminar el límite (cuota ilimitada).</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-topbar" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Límite</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Crear/Editar Plantilla Compartida -->
+  <div id="modal-template" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-template-title" class="modal-title">Nueva Plantilla Compartida</h3>
+        <button type="button" class="btn-modal-close" data-close-modal>&times;</button>
+      </div>
+      <form id="form-template">
+        <input type="hidden" id="tmpl-id" />
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="tmpl-title">Título de la Plantilla</label>
+            <input type="text" id="tmpl-title" class="form-input" placeholder="Ej. Respuesta inicial de ticket" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="tmpl-category">Categoría</label>
+            <select id="tmpl-category" class="form-select" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="tmpl-content">Contenido</label>
+            <textarea id="tmpl-content" class="form-textarea" rows="5" placeholder="Escribe el texto de la plantilla..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-topbar" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Plantilla</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Container de Notificaciones Toast -->
+  <div id="admin-toast-container" class="admin-toast-container"></div>
+
+</body>
+</html>

@@ -1,72 +1,52 @@
 import { AiAction, AiParaphraseLevel, AiTone } from '../types/ai.types.js';
 
-const BASE_SYSTEM_PROMPT = `Eres un asistente de redacción especializado en soporte técnico y atención de mesa de ayuda (Service Desk / Helpdesk).
-REGLAS ESTRICTAS DE RESPUESTA:
-1. Devuelve ÚNICAMENTE el texto final resultante.
-2. NUNCA agregues preámbulos, saludos conversacionales ni explicaciones (como "Claro", "Aquí tienes", "Por supuesto", "A continuación presento").
-3. NUNCA inventes hechos, soluciones, números, nombres propios, códigos de ticket, correos electrónicos ni nombres de sistemas que no estén presentes en el texto original.
-4. NUNCA afirmes que una incidencia fue solucionada a menos que el texto original lo declare explícitamente.
-5. Mantén siempre un formato limpio en español.`;
+const GLOBAL_RULES = `Asistente de soporte técnico (Helpdesk).
+REGLAS:
+1. Devuelve ÚNICAMENTE el texto final resultante sin preámbulos, saludos ni explicaciones.
+2. NUNCA inventes hechos, nombres, números de ticket, correos ni soluciones no presentes en el texto original.
+3. NUNCA afirmes que una incidencia fue solucionada si el texto original no lo indica.
+4. Mantén formato limpio en español.`;
 
-const TONE_DESCRIPTIONS: Record<AiTone, string> = {
-  professional: 'tono profesional, sobrio, claro y orientado a estándares corporativos de soporte',
-  formal: 'tono formal, respetuoso, protocolar y usando tratamiento de cortesía',
-  friendly: 'tono amable, empático, cordial, cálido y servicial',
-  technical: 'tono técnico, preciso, conciso y utilizando terminología informática adecuada',
-  casual: 'tono casual, directo, relajado y accesible sin perder el respeto',
+const TONE_MAP: Record<AiTone, string> = {
+  professional: 'tono profesional, sobrio y corporativo',
+  formal: 'tono formal y protocolar',
+  friendly: 'tono amable, cordial y empático',
+  technical: 'tono técnico y preciso con terminología TI',
+  casual: 'tono casual, directo y accesible',
 };
 
-const PARAPHRASE_LEVEL_DESCRIPTIONS: Record<AiParaphraseLevel, string> = {
-  soft: 'Realiza modificaciones leves: ajusta pequeñas palabras y conectores manteniendo intacta la estructura original de las oraciones.',
-  medium: 'Realiza modificaciones moderadas: reformula frases completas para mejorar la fluidez y naturalidad sin alterar el orden lógico.',
-  complete: 'Realiza una reescritura integral: reorganiza la estructura y léxico para una redacción óptima, preservando al 100% el significado original.',
+const LEVEL_MAP: Record<AiParaphraseLevel, string> = {
+  soft: 'modificaciones leves en conectores manteniendo estructura',
+  medium: 'modificaciones moderadas reformulando frases para mejor fluidez',
+  complete: 'reescritura integral manteniendo al 100% el significado original',
 };
 
 export function buildSystemPrompt(action: AiAction, tone: AiTone = 'professional', level: AiParaphraseLevel = 'medium'): string {
-  const toneDesc = TONE_DESCRIPTIONS[tone] || TONE_DESCRIPTIONS.professional;
-  const levelDesc = PARAPHRASE_LEVEL_DESCRIPTIONS[level] || PARAPHRASE_LEVEL_DESCRIPTIONS.medium;
+  const toneDesc = TONE_MAP[tone] || TONE_MAP.professional;
+  const levelDesc = LEVEL_MAP[level] || LEVEL_MAP.medium;
 
   switch (action) {
     case 'correct':
-      return `${BASE_SYSTEM_PROMPT}
-
-TAREA ESPECÍFICA: CORREGIR
-- Corrige únicamente errores ortográficos, gramaticales, de puntuación, mayúsculas y concordancia en el texto del usuario.
-- Conserva el orden, terminología y estructura original del texto.
-- No alteres el sentido ni elimines datos técnicos o nombres.`;
+      return `${GLOBAL_RULES}
+TAREA: CORREGIR ortografía, gramática y puntuación sin alterar orden, sentido ni terminología.`;
 
     case 'paraphrase':
-      return `${BASE_SYSTEM_PROMPT}
-
-TAREA ESPECÍFICA: PARAFRASEAR
-- Nivel de parafraseo solicitado: ${levelDesc}
-- Aplica un ${toneDesc}.
-- Asegura que ningún dato, número, nombre o hecho sea alterado ni añadido.`;
+      return `${GLOBAL_RULES}
+TAREA: PARAFRASEAR (${levelDesc}) en ${toneDesc}. No alteres datos ni hechos.`;
 
     case 'professionalize':
-      return `${BASE_SYSTEM_PROMPT}
-
-TAREA ESPECÍFICA: PROFESIONALIZAR
-- Transforma el texto proporcionado (que puede ser informal, coloquial o un reporte rápido) en un párrafo redactado de manera profesional, estructurada y limpia, idóneo para el registro o actualización de un ticket de soporte técnico.
-- Estilo: Claro, profesional, conciso y natural. Evita la grandilocuencia o jerga excesiva.
-- No agregues procedimientos o resoluciones que el usuario no haya mencionado.`;
+      return `${GLOBAL_RULES}
+TAREA: PROFESIONALIZAR. Transforma el reporte en un texto claro, sobrio y estructurado apto para ticket de soporte. No inventes diagnósticos ni resoluciones.`;
 
     case 'summarize':
-      return `${BASE_SYSTEM_PROMPT}
-
-TAREA ESPECÍFICA: RESUMIR
-- Sintetiza el texto conservando los puntos principales, el problema reportado y el estado actual de la solicitud.
-- Sé breve y conciso (máximo 2 a 3 viñetas o un párrafo corto).`;
+      return `${GLOBAL_RULES}
+TAREA: RESUMIR de forma concisa (máximo 2-3 viñetas o 1 párrafo corto) preservando el problema y estado.`;
 
     case 'reply':
-      return `${BASE_SYSTEM_PROMPT}
-
-TAREA ESPECÍFICA: RESPONDER
-- Redacta una respuesta dirigida al usuario o cliente basada estrictamente en la información provista.
-- Aplica un ${toneDesc}.
-- Si falta información o una acción está pendiente, indica que se está gestionando o solicita el dato faltante, pero NUNCA inventes tiempos de compromiso (SLA), fechas ficticias ni afirmes que se realizaron acciones que no constan en el texto.`;
+      return `${GLOBAL_RULES}
+TAREA: RESPONDER al usuario en ${toneDesc} basándote estrictamente en el texto. NUNCA inventes SLAs, fechas ficticias ni acciones no realizadas.`;
 
     default:
-      return BASE_SYSTEM_PROMPT;
+      return GLOBAL_RULES;
   }
 }

@@ -94,8 +94,16 @@ export class AiService {
 
     const systemPrompt = buildSystemPrompt(action, tone, paraphraseLevel);
 
+    const completionOptions = {
+      correct: { maxTokens: 1024, temperature: 0.1 },
+      professionalize: { maxTokens: 1024, temperature: 0.1 },
+      paraphrase: { maxTokens: 1024, temperature: 0.3 },
+      summarize: { maxTokens: 512, temperature: 0.1 },
+      reply: { maxTokens: 512, temperature: 0.2 },
+    }[action] || { maxTokens: 1024, temperature: 0.1 };
+
     try {
-      const result = await groqService.generateCompletion(systemPrompt, textToProcess);
+      const result = await groqService.generateCompletion(systemPrompt, textToProcess, completionOptions);
 
       // Restaurar datos si se aplicó redacción
       let finalResultText = result.result;
