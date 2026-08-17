@@ -27,6 +27,7 @@ async function safeJsonParse(response: Response): Promise<{ ok: boolean; data?: 
 export class AuthService {
   private accessToken: string | null = null;
   private currentUser: UserSession | null = null;
+  private refreshPromise: Promise<boolean> | null = null;
 
   async init(): Promise<void> {
     try {
@@ -114,41 +115,52 @@ export class AuthService {
   }
 
   async refreshTokens(): Promise<boolean> {
-    try {
-      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
-        return false;
-      }
+    // Si ya existe una llamada de refresco en curso, retornar la misma promesa (Request Coalescing)
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
 
-      const { refreshToken } = (await chrome.storage.local.get(['refreshToken'])) as { refreshToken?: string };
-      if (!refreshToken) return false;
+    this.refreshPromise = (async () => {
+      try {
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+          return false;
+        }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_REFRESH}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
+        const { refreshToken } = (await chrome.storage.local.get(['refreshToken'])) as { refreshToken?: string };
+        if (!refreshToken) return false;
 
-      const parsed = await safeJsonParse(response);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_REFRESH}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
 
-      if (!parsed.ok || !parsed.data || !parsed.data.success) {
+        const parsed = await safeJsonParse(response);
+
+        if (!parsed.ok || !parsed.data || !parsed.data.success) {
+          await this.logout();
+          return false;
+        }
+
+        this.accessToken = parsed.data.data.accessToken;
+
+        if (chrome.storage.session) {
+          await chrome.storage.session.set({ accessToken: this.accessToken });
+        }
+        if (chrome.storage.local) {
+          await chrome.storage.local.set({ refreshToken: parsed.data.data.refreshToken });
+        }
+
+        return true;
+      } catch {
         await this.logout();
         return false;
+      } finally {
+        this.refreshPromise = null;
       }
+    })();
 
-      this.accessToken = parsed.data.data.accessToken;
-
-      if (chrome.storage.session) {
-        await chrome.storage.session.set({ accessToken: this.accessToken });
-      }
-      if (chrome.storage.local) {
-        await chrome.storage.local.set({ refreshToken: parsed.data.data.refreshToken });
-      }
-
-      return true;
-    } catch {
-      await this.logout();
-      return false;
-    }
+    return this.refreshPromise;
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {

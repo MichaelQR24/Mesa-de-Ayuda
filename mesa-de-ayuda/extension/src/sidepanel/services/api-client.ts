@@ -147,10 +147,25 @@ export interface RemoteCategory {
   createdAt: string;
 }
 
-export async function fetchRemoteCategories(): Promise<{ success: boolean; data?: RemoteCategory[]; error?: { message?: string } }> {
+let cachedCategories: RemoteCategory[] | null = null;
+let categoriesCacheTime = 0;
+const CATEGORIES_TTL_MS = 5 * 60 * 1000; // 5 minutos
+
+export async function fetchRemoteCategories(forceRefresh = false): Promise<{ success: boolean; data?: RemoteCategory[]; error?: { message?: string } }> {
+  if (!forceRefresh && cachedCategories && Date.now() - categoriesCacheTime < CATEGORIES_TTL_MS) {
+    return { success: true, data: cachedCategories };
+  }
+
   try {
     const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CATEGORIES}`);
     const parsed = await safeParseJson<{ success: boolean; data: RemoteCategory[]; error?: { message?: string } }>(response);
+
+    if (parsed.data && parsed.data.success && Array.isArray(parsed.data.data)) {
+      cachedCategories = parsed.data.data;
+      categoriesCacheTime = Date.now();
+      return { success: true, data: cachedCategories };
+    }
+
     return parsed.data || { success: false, error: { message: parsed.error } };
   } catch (error) {
     return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
