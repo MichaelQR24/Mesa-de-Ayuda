@@ -1,11 +1,14 @@
 import { app } from './app.js';
 import { env } from './config/env.js';
 
-const server = app.listen(env.PORT, () => {
-  console.log(`🚀 Servidor backend escuchando en http://localhost:${env.PORT}`);
+const HOST = '0.0.0.0';
+const PORT = env.PORT;
+
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Servidor backend escuchando en http://${HOST}:${PORT}`);
   console.log(`📡 Entorno: ${env.NODE_ENV}`);
-  console.log(`🩺 Health check: http://localhost:${env.PORT}/health`);
-  console.log(`🧪 Test endpoint: http://localhost:${env.PORT}/api/v1/test`);
+  console.log(`🩺 Health check: http://${HOST}:${PORT}/health`);
+  console.log(`🧪 Test endpoint: http://${HOST}:${PORT}/api/v1/test`);
 });
 
 // Manejo de apagado graceful

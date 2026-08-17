@@ -22,6 +22,9 @@ import libraryAdminRoutes from './routes/library-admin.routes.js';
 export const createApp = (): Express => {
   const app = express();
 
+  // 0. Configurar confianza en el proxy de Render para headers X-Forwarded-* (IP real y HTTPS)
+  app.set('trust proxy', 1);
+
   // 1. Inyección de Request ID seguro
   app.use((req: Request, res: Response, next: NextFunction) => {
     const incomingId = req.headers['x-request-id'];
