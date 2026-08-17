@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { User, UserRole, UserStatus } from '@prisma/client';
+import { Prisma, User, UserRole, UserStatus } from '@prisma/client';
 
 export interface CreateUserData {
   email: string;
@@ -8,9 +8,32 @@ export interface CreateUserData {
   role: UserRole;
   status?: UserStatus;
   mustChangePassword?: boolean;
+  monthlyTokenLimit?: number | null;
 }
 
 export type SafeUser = Omit<User, 'passwordHash'>;
+
+export interface FindUsersOptions {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  role?: UserRole;
+  status?: UserStatus;
+}
+
+const safeUserSelect = {
+  id: true,
+  email: true,
+  displayName: true,
+  role: true,
+  status: true,
+  mustChangePassword: true,
+  monthlyTokenLimit: true,
+  lastLoginAt: true,
+  passwordChangedAt: true,
+  createdAt: true,
+  updatedAt: true,
+};
 
 export class UserRepository {
   async findByEmail(email: string): Promise<User | null> {
@@ -28,17 +51,15 @@ export class UserRepository {
   async findSafeById(id: string): Promise<SafeUser | null> {
     return prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        lastLoginAt: true,
-        passwordChangedAt: true,
-        createdAt: true,
-        updatedAt: true,
+      select: safeUserSelect,
+    });
+  }
+
+  async countActiveAdmins(): Promise<number> {
+    return prisma.user.count({
+      where: {
+        role: UserRole.ADMIN,
+        status: UserStatus.ACTIVE,
       },
     });
   }
@@ -52,19 +73,17 @@ export class UserRepository {
         role: data.role,
         status: data.status ?? UserStatus.ACTIVE,
         mustChangePassword: data.mustChangePassword ?? true,
+        monthlyTokenLimit: data.monthlyTokenLimit ?? null,
       },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        lastLoginAt: true,
-        passwordChangedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: safeUserSelect,
+    });
+  }
+
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<SafeUser> {
+    return prisma.user.update({
+      where: { id },
+      data,
+      select: safeUserSelect,
     });
   }
 
@@ -76,18 +95,7 @@ export class UserRepository {
         mustChangePassword,
         passwordChangedAt: new Date(),
       },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        lastLoginAt: true,
-        passwordChangedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: safeUserSelect,
     });
   }
 
@@ -95,18 +103,7 @@ export class UserRepository {
     return prisma.user.update({
       where: { id },
       data: { status },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        lastLoginAt: true,
-        passwordChangedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: safeUserSelect,
     });
   }
 
@@ -117,22 +114,38 @@ export class UserRepository {
     });
   }
 
-  async findMany(): Promise<SafeUser[]> {
-    return prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        role: true,
-        status: true,
-        mustChangePassword: true,
-        lastLoginAt: true,
-        passwordChangedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findMany(options: FindUsersOptions = {}): Promise<{ items: SafeUser[]; total: number }> {
+    const limit = Math.min(options.limit ?? 50, 100);
+    const offset = options.offset ?? 0;
+
+    const where: Prisma.UserWhereInput = {};
+
+    if (options.role) {
+      where.role = options.role;
+    }
+    if (options.status) {
+      where.status = options.status;
+    }
+    if (options.search) {
+      const q = options.search.trim();
+      where.OR = [
+        { displayName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        select: safeUserSelect,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   async count(): Promise<number> {

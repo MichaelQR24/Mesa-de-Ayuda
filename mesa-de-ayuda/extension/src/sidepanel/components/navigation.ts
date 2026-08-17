@@ -23,6 +23,15 @@ export class NavigationManager {
       showToast('Sesión cerrada correctamente', 'info');
       this.showLogin();
     });
+
+    const adminBtn = document.getElementById('btn-open-admin');
+    adminBtn?.addEventListener('click', () => {
+      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+        chrome.tabs.create({ url: chrome.runtime.getURL('src/admin/index.html') });
+      } else {
+        window.open('src/admin/index.html', '_blank');
+      }
+    });
   }
 
   onTabChange(listener: (tab: NavTab) => void): void {
@@ -75,11 +84,16 @@ export class NavigationManager {
     const user = authService.getUser();
     const nameEl = document.getElementById('user-display-name');
     const roleEl = document.getElementById('user-role-badge');
+    const adminBtn = document.getElementById('btn-open-admin');
 
     if (user && nameEl && roleEl) {
       nameEl.textContent = user.displayName;
       nameEl.title = `${user.displayName} (${user.email})`;
       roleEl.textContent = user.role;
+
+      if (adminBtn) {
+        adminBtn.classList.toggle('hidden', user.role !== 'ADMIN');
+      }
     }
   }
 

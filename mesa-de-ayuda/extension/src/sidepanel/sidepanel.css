@@ -973,6 +973,20 @@ body {
   text-transform: uppercase;
 }
 
+.btn-admin-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-admin-icon:hover {
+  background-color: var(--color-action-light);
+}
+
 .btn-logout-icon {
   background: none;
   border: none;

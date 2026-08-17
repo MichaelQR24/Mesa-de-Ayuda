@@ -76,6 +76,7 @@ export class AuthService {
       role: user.role,
       status: user.status,
       mustChangePassword: user.mustChangePassword,
+      monthlyTokenLimit: user.monthlyTokenLimit,
       lastLoginAt: new Date(),
       passwordChangedAt: user.passwordChangedAt,
       createdAt: user.createdAt,

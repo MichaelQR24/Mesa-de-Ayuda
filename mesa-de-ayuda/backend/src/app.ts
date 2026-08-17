@@ -13,6 +13,10 @@ import libraryRoutes from './routes/library.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import adminUserRoutes from './routes/admin-user.routes.js';
+import usageRoutes from './routes/usage.routes.js';
+import auditRoutes from './routes/audit.routes.js';
+import sessionAdminRoutes from './routes/session-admin.routes.js';
+import libraryAdminRoutes from './routes/library-admin.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -25,7 +29,6 @@ export const createApp = (): Express => {
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Permitir solicitudes sin origin (como herramientas locales o curl) o si coincide con la configuración
         if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin) || origin.startsWith('chrome-extension://')) {
           callback(null, true);
         } else {
@@ -41,7 +44,7 @@ export const createApp = (): Express => {
   // 3. Body Parser con límite seguro de 50kb
   app.use(express.json({ limit: '50kb' }));
 
-  // 4. Logger minimalista y seguro (método, ruta, status, tiempo; sin volcar contenido de body)
+  // 4. Logger minimalista y seguro
   app.use((req: Request, res: Response, next: NextFunction) => {
     const start = Date.now();
     res.on('finish', () => {
@@ -59,7 +62,15 @@ export const createApp = (): Express => {
   // 6. Rutas de la API v1 con Rate Limiting
   app.use('/api', apiLimiter);
   app.use('/api/v1/auth', authRoutes);
+
+  // Rutas administrativas (Solo ADMIN)
   app.use('/api/v1/admin/users', adminUserRoutes);
+  app.use('/api/v1/admin/usage', usageRoutes);
+  app.use('/api/v1/admin/audit', auditRoutes);
+  app.use('/api/v1/admin/sessions', sessionAdminRoutes);
+  app.use('/api/v1/admin/library', libraryAdminRoutes);
+
+  // Rutas operativas
   app.use('/api/v1/test', testRoutes);
   app.use('/api/v1/ai', aiRoutes);
   app.use('/api/v1/history', historyRoutes);

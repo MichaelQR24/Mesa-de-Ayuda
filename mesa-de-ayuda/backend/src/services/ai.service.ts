@@ -1,6 +1,8 @@
 import { buildSystemPrompt } from '../prompts/prompts.js';
 import { groqService } from './groq.service.js';
 import { historyRepository } from '../repositories/history.repository.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { usageService } from './usage.service.js';
 import { AiProcessInput, AiProcessResult } from '../types/ai.types.js';
 import { AiAction as PrismaAiAction, Tone as PrismaTone, ParaphraseLevel as PrismaParaphraseLevel } from '@prisma/client';
 
@@ -30,6 +32,29 @@ export class AiService {
   async processText(input: AiProcessInput): Promise<AiProcessResult> {
     const { text, action, tone = 'professional', paraphraseLevel = 'medium', userId = null } = input;
 
+    // 1. Validar límite mensual de tokens si el usuario tiene una cuota configurada
+    if (userId) {
+      try {
+        const user = await userRepository.findSafeById(userId);
+        if (user && typeof user.monthlyTokenLimit === 'number' && user.monthlyTokenLimit > 0) {
+          const usedTokens = await usageService.getUserMonthlyTokenUsage(userId);
+          if (usedTokens >= user.monthlyTokenLimit) {
+            const limitError = new Error(
+              `Has alcanzado tu límite mensual de tokens de IA (${usedTokens.toLocaleString()} / ${user.monthlyTokenLimit.toLocaleString()}). Comunícate con el administrador.`
+            );
+            (limitError as any).code = 'MONTHLY_AI_LIMIT_REACHED';
+            (limitError as any).statusCode = 429;
+            throw limitError;
+          }
+        }
+      } catch (err: any) {
+        if (err.code === 'MONTHLY_AI_LIMIT_REACHED') {
+          throw err;
+        }
+        // Si hay un error al chequear el límite que no sea limit reached, continuar
+      }
+    }
+
     const systemPrompt = buildSystemPrompt(action, tone, paraphraseLevel);
 
     try {
@@ -57,6 +82,10 @@ export class AiService {
 
       return result;
     } catch (error: unknown) {
+      if ((error as any).code === 'MONTHLY_AI_LIMIT_REACHED') {
+        throw error;
+      }
+
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('GROQ_API_KEY no está configurada')) {
