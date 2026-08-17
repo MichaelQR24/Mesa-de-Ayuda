@@ -33,6 +33,20 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
+  // Manejo de errores controlados con código personalizado (ej. AI_PROVIDER_ERROR, API_KEY_MISSING)
+  if (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string') {
+    const customErr = err as { code: string; message: string; statusCode?: number };
+    const statusCode = customErr.statusCode || 500;
+    res.status(statusCode).json({
+      success: false,
+      error: {
+        code: customErr.code,
+        message: customErr.message || 'Error al procesar la solicitud',
+      },
+    });
+    return;
+  }
+
   // Error genérico sin exponer detalles internos o stack traces
   console.error('Error interno del servidor:', err);
 

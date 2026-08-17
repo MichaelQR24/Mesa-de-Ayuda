@@ -7,6 +7,12 @@ import { notFoundHandler } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import healthRoutes from './routes/health.routes.js';
 import testRoutes from './routes/test.routes.js';
+import aiRoutes from './routes/ai.routes.js';
+import historyRoutes from './routes/history.routes.js';
+import libraryRoutes from './routes/library.routes.js';
+import categoryRoutes from './routes/category.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import adminUserRoutes from './routes/admin-user.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -26,7 +32,7 @@ export const createApp = (): Express => {
           callback(new Error('Bloqueado por política CORS'));
         }
       },
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
     })
@@ -52,7 +58,13 @@ export const createApp = (): Express => {
 
   // 6. Rutas de la API v1 con Rate Limiting
   app.use('/api', apiLimiter);
+  app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/admin/users', adminUserRoutes);
   app.use('/api/v1/test', testRoutes);
+  app.use('/api/v1/ai', aiRoutes);
+  app.use('/api/v1/history', historyRoutes);
+  app.use('/api/v1/library', libraryRoutes);
+  app.use('/api/v1/categories', categoryRoutes);
 
   // 7. Manejo de 404 para rutas inexistentes
   app.use(notFoundHandler);

@@ -13,3 +13,17 @@ export const apiLimiter = rateLimit({
     },
   },
 });
+
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  limit: 10, // Límite de 10 intentos de autenticación por IP
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'AUTH_RATE_LIMIT_EXCEEDED',
+      message: 'Demasiados intentos de inicio de sesión fallidos. Por favor, intente nuevamente en 15 minutos.',
+    },
+  },
+});
