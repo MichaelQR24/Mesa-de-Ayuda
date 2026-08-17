@@ -4,8 +4,8 @@ import { AiHistory, AiAction, Tone, ParaphraseLevel } from '@prisma/client';
 export interface CreateHistoryDto {
   userId?: string | null;
   action: AiAction;
-  originalText: string;
-  resultText: string;
+  originalText?: string | null;
+  resultText?: string | null;
   tone?: Tone;
   paraphraseLevel?: ParaphraseLevel;
   model: string;
@@ -21,8 +21,8 @@ export class HistoryRepository {
       data: {
         userId: data.userId ?? null,
         action: data.action,
-        originalText: data.originalText,
-        resultText: data.resultText,
+        originalText: data.originalText ?? null,
+        resultText: data.resultText ?? null,
         tone: data.tone ?? Tone.PROFESSIONAL,
         paraphraseLevel: data.paraphraseLevel ?? ParaphraseLevel.MEDIUM,
         model: data.model,

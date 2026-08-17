@@ -24,6 +24,8 @@ describe('GET /api/v1/history', () => {
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
       mustChangePassword: false,
+      monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: new Date(),
       passwordChangedAt: null,
       createdAt: new Date(),

@@ -38,6 +38,7 @@ describe('Admin User Endpoints (/api/v1/admin/users)', () => {
       status: UserStatus.ACTIVE,
       mustChangePassword: false,
       monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: new Date(),
       passwordChangedAt: null,
       createdAt: new Date(),
@@ -54,6 +55,7 @@ describe('Admin User Endpoints (/api/v1/admin/users)', () => {
       status: UserStatus.ACTIVE,
       mustChangePassword: true,
       monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: null,
       passwordChangedAt: null,
       createdAt: new Date(),
@@ -87,6 +89,7 @@ describe('Admin User Endpoints (/api/v1/admin/users)', () => {
       status: UserStatus.ACTIVE,
       mustChangePassword: false,
       monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: new Date(),
       passwordChangedAt: null,
       createdAt: new Date(),
@@ -119,6 +122,7 @@ describe('Admin User Endpoints (/api/v1/admin/users)', () => {
           status: UserStatus.ACTIVE,
           mustChangePassword: false,
           monthlyTokenLimit: null,
+          saveAiHistory: true,
           lastLoginAt: new Date(),
           passwordChangedAt: null,
           createdAt: new Date(),
@@ -134,6 +138,7 @@ describe('Admin User Endpoints (/api/v1/admin/users)', () => {
           status: UserStatus.ACTIVE,
           mustChangePassword: false,
           monthlyTokenLimit: null,
+          saveAiHistory: true,
           lastLoginAt: null,
           passwordChangedAt: null,
           createdAt: new Date(),
@@ -151,13 +156,14 @@ describe('Admin User Endpoints (/api/v1/admin/users)', () => {
       status: UserStatus.INACTIVE,
       mustChangePassword: false,
       monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: null,
       passwordChangedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    const revokeSpy = vi.spyOn(sessionRepository, 'revokeAllUserSessions').mockResolvedValueOnce({ count: 1 });
+    const revokeSpy = vi.spyOn(sessionRepository, 'revokeAllUserSessions').mockResolvedValueOnce(undefined as any);
 
     const response = await request(app)
       .patch('/api/v1/admin/users/user-to-disable/status')

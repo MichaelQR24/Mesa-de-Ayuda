@@ -9,9 +9,23 @@ export interface CreateUserData {
   status?: UserStatus;
   mustChangePassword?: boolean;
   monthlyTokenLimit?: number | null;
+  saveAiHistory?: boolean;
 }
 
-export type SafeUser = Omit<User, 'passwordHash'>;
+export interface SafeUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  status: UserStatus;
+  mustChangePassword: boolean;
+  monthlyTokenLimit: number | null;
+  saveAiHistory: boolean;
+  lastLoginAt: Date | null;
+  passwordChangedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface FindUsersOptions {
   limit?: number;
@@ -29,6 +43,7 @@ const safeUserSelect = {
   status: true,
   mustChangePassword: true,
   monthlyTokenLimit: true,
+  saveAiHistory: true,
   lastLoginAt: true,
   passwordChangedAt: true,
   createdAt: true,
@@ -74,6 +89,7 @@ export class UserRepository {
         status: data.status ?? UserStatus.ACTIVE,
         mustChangePassword: data.mustChangePassword ?? true,
         monthlyTokenLimit: data.monthlyTokenLimit ?? null,
+        saveAiHistory: data.saveAiHistory ?? true,
       },
       select: safeUserSelect,
     });
@@ -83,6 +99,14 @@ export class UserRepository {
     return prisma.user.update({
       where: { id },
       data,
+      select: safeUserSelect,
+    });
+  }
+
+  async updatePrivacyPreferences(id: string, saveAiHistory: boolean): Promise<SafeUser> {
+    return prisma.user.update({
+      where: { id },
+      data: { saveAiHistory },
       select: safeUserSelect,
     });
   }

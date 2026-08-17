@@ -2,24 +2,47 @@
  * Utilidades para verificación y manipulación segura de elementos editables en el DOM
  */
 
-export function isPasswordInput(el: Element | null): boolean {
+export function isSensitiveInput(el: Element | null): boolean {
   if (!el || !(el instanceof HTMLInputElement)) return false;
 
   const type = (el.getAttribute('type') || el.type || '').toLowerCase();
-  if (type === 'password') return true;
+  if (type === 'password' || type === 'hidden' || type === 'file') return true;
 
   const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
-  if (autocomplete.includes('password') || autocomplete.includes('current-password') || autocomplete.includes('new-password')) {
+  if (
+    autocomplete.includes('password') ||
+    autocomplete.includes('current-password') ||
+    autocomplete.includes('new-password') ||
+    autocomplete.includes('cc-number') ||
+    autocomplete.includes('cc-csc') ||
+    autocomplete.includes('cc-exp') ||
+    autocomplete.includes('credit-card')
+  ) {
+    return true;
+  }
+
+  const nameOrId = ((el.name || '') + ' ' + (el.id || '')).toLowerCase();
+  if (
+    nameOrId.includes('password') ||
+    nameOrId.includes('passwd') ||
+    nameOrId.includes('cardnumber') ||
+    nameOrId.includes('cvv') ||
+    nameOrId.includes('cvc')
+  ) {
     return true;
   }
 
   return false;
 }
 
+export function isPasswordInput(el: Element | null): boolean {
+  return isSensitiveInput(el);
+}
+
 export function isEditableInputOrTextarea(el: Element | null): el is HTMLInputElement | HTMLTextAreaElement {
   if (!el) return false;
 
-  if (isPasswordInput(el)) return false;
+  if (isSensitiveInput(el)) return false;
 
   if (el instanceof HTMLTextAreaElement) {
     return !el.disabled && !el.readOnly;
@@ -51,6 +74,7 @@ export function replaceInputSelection(
 ): boolean {
   try {
     if (el.disabled || el.readOnly) return false;
+    if (isSensitiveInput(el)) return false;
 
     const fullValue = el.value;
     const safeStart = Math.max(0, Math.min(start, fullValue.length));
@@ -67,7 +91,7 @@ export function replaceInputSelection(
     el.setSelectionRange(newCursorPos, newCursorPos);
     el.focus();
 
-    // Disparar eventos nativos para que React/Vue/Angular y validadores detecten el cambio
+    // Disparar eventos nativos para que frameworks y validadores sincronicen
     el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
     el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
 

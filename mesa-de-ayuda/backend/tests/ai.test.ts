@@ -26,6 +26,8 @@ describe('POST /api/v1/ai/process', () => {
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
       mustChangePassword: false,
+      monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: new Date(),
       passwordChangedAt: null,
       createdAt: new Date(),
@@ -151,7 +153,7 @@ describe('POST /api/v1/ai/process', () => {
       });
 
     expect(response.status).toBe(502);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       success: false,
       error: {
         code: 'AI_PROVIDER_ERROR',

@@ -1,6 +1,6 @@
 /**
  * Background Service Worker - Mesa de Ayuda
- * Gestión de Side Panel API, Menús Contextuales y Comunicación de Selección
+ * Gestión de Side Panel API, Menús Contextuales y Comunicación Segura
  */
 
 import { ActionType } from '../sidepanel/types/index';
@@ -22,6 +22,16 @@ export const CONTEXT_MENU_ITEMS: ContextMenuItemConfig[] = [
   { id: 'mesa-ayuda-reply', title: 'Generar respuesta', action: 'responder' },
   { id: 'mesa-ayuda-open', title: 'Enviar al asistente', action: null },
 ];
+
+const ALLOWED_MESSAGE_TYPES = new Set([
+  'GET_SELECTED_TEXT',
+  'GET_SELECTED_TEXT_RESPONSE',
+  'REPLACE_SELECTION',
+  'REPLACE_SELECTION_RESPONSE',
+  'LOAD_SELECTION',
+  'CLEAR_SELECTION_CONTEXT',
+  'PING',
+]);
 
 /**
  * Función pura para resolver la acción a partir del menuItemId
@@ -49,14 +59,12 @@ function setupContextMenus(): void {
 
   try {
     chrome.contextMenus.removeAll(() => {
-      // Menú Padre
       chrome.contextMenus.create({
         id: MENU_ROOT_ID,
         title: 'Mesa de Ayuda',
         contexts: ['selection'],
       });
 
-      // Opciones Hijas
       CONTEXT_MENU_ITEMS.forEach((item) => {
         chrome.contextMenus.create({
           id: item.id,
@@ -89,16 +97,16 @@ if (typeof chrome !== 'undefined' && chrome.contextMenus && chrome.contextMenus.
     const rawSelection = (info.selectionText || '').trim();
     if (!rawSelection) return;
 
-    // 1. Intentar abrir Side Panel en la pestaña actual
+    // Abrir Side Panel en la pestaña actual
     if (chrome.sidePanel && chrome.sidePanel.open) {
       try {
         await chrome.sidePanel.open({ tabId });
       } catch (err) {
-        console.warn('[Mesa de Ayuda] Aviso al abrir Side Panel en pestaña protegida o restringida:', err);
+        console.warn('[Mesa de Ayuda] Aviso al abrir Side Panel en pestaña:', err);
       }
     }
 
-    // 2. Intentar consultar detalles enriquecidos al Content Script (si está inyectado y es editable)
+    // Consultar detalles al Content Script
     let context: SelectedTextContext = {
       text: rawSelection,
       sourceType: 'page',
@@ -120,16 +128,14 @@ if (typeof chrome !== 'undefined' && chrome.contextMenus && chrome.contextMenus.
           };
         }
       } catch {
-        // En páginas sin Content Script o no accesibles se conserva el rawSelection capturado por Chrome
+        // Fallback seguro
       }
     }
 
-    // 3. Guardar en session storage (para que el Side Panel lo lea si aún no estaba abierto o tras login)
     if (chrome.storage && chrome.storage.session) {
       await chrome.storage.session.set({ pendingSelection: context });
     }
 
-    // 4. Notificar también por mensaje en tiempo real si el Side Panel ya está abierto
     if (chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ type: 'LOAD_SELECTION', payload: context }).catch(() => {});
     }
@@ -152,5 +158,29 @@ if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.onActivated) {
         });
       }
     }
+  });
+}
+
+// 5. Hardening de mensajes en Service Worker con validación de Sender y Whitelist
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Validar sender
+    if (sender.id !== chrome.runtime.id) {
+      sendResponse({ success: false, error: 'Sender no autorizado' });
+      return false;
+    }
+
+    // Validar whitelist de mensajes
+    if (!message || typeof message !== 'object' || !ALLOWED_MESSAGE_TYPES.has(message.type)) {
+      sendResponse({ success: false, error: 'Tipo de mensaje no permitido' });
+      return false;
+    }
+
+    if (message.type === 'PING') {
+      sendResponse({ success: true, timestamp: Date.now() });
+      return false;
+    }
+
+    return true;
   });
 }

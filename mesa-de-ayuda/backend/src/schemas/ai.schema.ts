@@ -21,6 +21,7 @@ export const aiProcessSchema = z.object({
     })
     .optional()
     .default('medium'),
+  redactSensitiveData: z.boolean().optional().default(false),
 });
 
 export type AiProcessSchemaType = z.infer<typeof aiProcessSchema>;

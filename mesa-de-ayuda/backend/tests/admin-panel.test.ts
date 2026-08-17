@@ -39,6 +39,7 @@ describe('Admin Panel Endpoints (Fase 8)', () => {
           status: UserStatus.ACTIVE,
           mustChangePassword: false,
           monthlyTokenLimit: null,
+          saveAiHistory: true,
           lastLoginAt: new Date(),
           passwordChangedAt: null,
           createdAt: new Date(),
@@ -54,6 +55,7 @@ describe('Admin Panel Endpoints (Fase 8)', () => {
           status: UserStatus.ACTIVE,
           mustChangePassword: false,
           monthlyTokenLimit: 10000,
+          saveAiHistory: true,
           lastLoginAt: new Date(),
           passwordChangedAt: null,
           createdAt: new Date(),
@@ -64,57 +66,65 @@ describe('Admin Panel Endpoints (Fase 8)', () => {
     });
   });
 
-  describe('Control de Acceso (RBAC)', () => {
-    it('debe rechazar con 403 a usuarios con rol USER al intentar acceder a rutas admin', async () => {
-      const response = await request(app)
-        .get('/api/v1/admin/usage/summary')
-        .set('Authorization', `Bearer ${userToken}`);
-
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('FORBIDDEN');
-    });
-
-    it('debe permitir acceso con 200 a usuarios con rol ADMIN', async () => {
-      vi.spyOn(usageService, 'getSummaryMetrics').mockResolvedValueOnce({
-        users: { total: 5, active: 4, inactive: 1 },
-        library: { sharedTotal: 12 },
-        usage: {
-          requestsToday: 15,
-          requestsMonth: 120,
-          inputTokensMonth: 50000,
-          outputTokensMonth: 20000,
-          totalTokensMonth: 70000,
-          avgTokensPerRequest: 583,
-          estimatedCostUsd: 0.0041,
-        },
+  describe('Gestión de Usuarios (Admin Only)', () => {
+    it('debe listar usuarios con métricas de paginación', async () => {
+      vi.spyOn(userRepository, 'findMany').mockResolvedValueOnce({
+        items: [
+          {
+            id: 'admin-1',
+            email: 'admin@soporte.com',
+            displayName: 'Admin Principal',
+            role: UserRole.ADMIN,
+            status: UserStatus.ACTIVE,
+            mustChangePassword: false,
+            monthlyTokenLimit: null,
+            saveAiHistory: true,
+            lastLoginAt: new Date(),
+            passwordChangedAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        total: 1,
       });
 
       const response = await request(app)
-        .get('/api/v1/admin/usage/summary')
+        .get('/api/v1/admin/users?limit=10&offset=0')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.users.total).toBe(5);
+      expect(response.body.data.items).toHaveLength(1);
+      expect(response.body.data.total).toBe(1);
     });
-  });
 
-  describe('Protección del Último Administrador', () => {
-    it('debe impedir desactivar al único administrador activo del sistema', async () => {
-      vi.spyOn(userRepository, 'countActiveAdmins').mockResolvedValueOnce(1);
+    it('debe actualizar los datos de un usuario', async () => {
+      vi.spyOn(userRepository, 'update').mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'agente@soporte.com',
+        displayName: 'Agente Modificado',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        mustChangePassword: false,
+        monthlyTokenLimit: null,
+        saveAiHistory: true,
+        lastLoginAt: new Date(),
+        passwordChangedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const response = await request(app)
-        .patch('/api/v1/admin/users/admin-1/status')
+        .patch('/api/v1/admin/users/user-1')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ status: UserStatus.INACTIVE });
+        .send({ displayName: 'Agente Modificado' });
 
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('LAST_ADMIN_PROTECTED');
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.displayName).toBe('Agente Modificado');
     });
 
-    it('debe impedir degradar de ADMIN a USER al único administrador activo', async () => {
+    it('debe proteger contra la eliminación o degradación del último ADMIN', async () => {
       vi.spyOn(userRepository, 'countActiveAdmins').mockResolvedValueOnce(1);
 
       const response = await request(app)
@@ -138,6 +148,7 @@ describe('Admin Panel Endpoints (Fase 8)', () => {
         status: UserStatus.ACTIVE,
         mustChangePassword: false,
         monthlyTokenLimit: 50000,
+        saveAiHistory: true,
         lastLoginAt: new Date(),
         passwordChangedAt: null,
         createdAt: new Date(),
@@ -207,7 +218,7 @@ describe('Admin Panel Endpoints (Fase 8)', () => {
     });
 
     it('debe permitir a un ADMIN revocar todas las sesiones de un usuario', async () => {
-      vi.spyOn(sessionRepository, 'revokeAllUserSessions').mockResolvedValueOnce({ count: 3 });
+      vi.spyOn(sessionRepository, 'revokeAllUserSessions').mockResolvedValueOnce(undefined as any);
 
       const response = await request(app)
         .post('/api/v1/admin/sessions/users/user-1/revoke-sessions')

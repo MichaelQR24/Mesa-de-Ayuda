@@ -4,6 +4,7 @@ import { storageService } from '../storage/storage-service';
 import { showToast } from './toast';
 import { processAiText, fetchRemoteCategories, createRemoteLibraryItem } from '../services/api-client';
 import { navigationManager } from './navigation';
+import { sensitiveDataGuard } from '../../utils/sensitive-data.guard';
 
 const ACTION_MAP: Record<ActionType, 'correct' | 'paraphrase' | 'professionalize' | 'summarize' | 'reply'> = {
   corregir: 'correct',
@@ -333,6 +334,23 @@ export class AssistantView {
     const backendTone = TONE_MAP[rawTone] || 'professional';
     const backendLevel = LEVEL_MAP[rawLevel] || 'medium';
 
+    // 1. Análisis de datos sensibles antes de enviar
+    const analysis = sensitiveDataGuard.analyze(originalText);
+    if (analysis.status === 'BLOCKED') {
+      const types = analysis.detectionTypes.join(', ');
+      showToast(`Datos sensibles bloqueados: ${types}. Elimínalos antes de enviar.`, 'error');
+      return;
+    }
+
+    let redactSensitiveData = false;
+    if (analysis.status === 'WARNING') {
+      const types = analysis.detectionTypes.join(', ');
+      const wantsRedaction = window.confirm(
+        `Se detectaron posibles datos personales (${types}).\n\n¿Deseas anonimizarlos automáticamente antes de procesar con la IA?`
+      );
+      redactSensitiveData = wantsRedaction;
+    }
+
     this.setProcessingState(true);
 
     try {
@@ -341,6 +359,7 @@ export class AssistantView {
         action: backendAction,
         tone: backendTone,
         paraphraseLevel: backendLevel,
+        redactSensitiveData,
       });
 
       if (!response.success || !response.data) {

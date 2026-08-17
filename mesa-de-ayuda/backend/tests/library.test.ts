@@ -25,6 +25,8 @@ describe('Library and Category Endpoints', () => {
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
       mustChangePassword: false,
+      monthlyTokenLimit: null,
+      saveAiHistory: true,
       lastLoginAt: new Date(),
       passwordChangedAt: null,
       createdAt: new Date(),

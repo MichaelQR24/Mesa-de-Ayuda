@@ -1,11 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { loginSchema, refreshSchema, logoutSchema, changePasswordSchema } from '../schemas/auth.schema.js';
 import { authService } from '../services/auth.service.js';
+import { userRepository } from '../repositories/user.repository.js';
+import { z } from 'zod';
+
+const privacySchema = z.object({
+  saveAiHistory: z.boolean(),
+});
 
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
-    const result = await authService.login(email, password);
+    const input = loginSchema.parse(req.body);
+    const result = await authService.login(input);
 
     res.status(200).json({
       success: true,
@@ -74,6 +80,31 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
       success: true,
       data: {
         message: 'Contraseña actualizada exitosamente.',
+        user: updatedUser,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePrivacy = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'No autenticado' },
+      });
+      return;
+    }
+
+    const { saveAiHistory } = privacySchema.parse(req.body);
+    const updatedUser = await userRepository.updatePrivacyPreferences(req.user.id, saveAiHistory);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        message: 'Preferencia de privacidad actualizada.',
         user: updatedUser,
       },
     });

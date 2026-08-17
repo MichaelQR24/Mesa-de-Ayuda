@@ -3,6 +3,8 @@ import { groqService } from './groq.service.js';
 import { historyRepository } from '../repositories/history.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
 import { usageService } from './usage.service.js';
+import { sensitiveDataGuard } from '../utils/sensitive-data.guard.js';
+import { auditRepository } from '../repositories/audit.repository.js';
 import { AiProcessInput, AiProcessResult } from '../types/ai.types.js';
 import { AiAction as PrismaAiAction, Tone as PrismaTone, ParaphraseLevel as PrismaParaphraseLevel } from '@prisma/client';
 
@@ -28,19 +30,55 @@ const LEVEL_PRISMA_MAP: Record<string, PrismaParaphraseLevel> = {
   complete: PrismaParaphraseLevel.COMPLETE,
 };
 
-export class AiService {
-  async processText(input: AiProcessInput): Promise<AiProcessResult> {
-    const { text, action, tone = 'professional', paraphraseLevel = 'medium', userId = null } = input;
+export interface EnhancedAiProcessInput extends AiProcessInput {
+  redactSensitiveData?: boolean;
+}
 
-    // 1. Validar límite mensual de tokens si el usuario tiene una cuota configurada
+export class AiService {
+  async processText(input: EnhancedAiProcessInput): Promise<AiProcessResult> {
+    const { text, action, tone = 'professional', paraphraseLevel = 'medium', userId = null, redactSensitiveData = false } = input;
+
+    // 1. Detección y bloqueo de datos sensibles (SensitiveDataGuard)
+    const analysis = sensitiveDataGuard.analyze(text);
+    if (analysis.status === 'BLOCKED') {
+      if (userId) {
+        await auditRepository.create({
+          actorUserId: userId,
+          action: 'SENSITIVE_DATA_BLOCKED',
+          targetType: 'AI_REQUEST',
+          metadata: {
+            detectionTypes: analysis.detectionTypes,
+          },
+        });
+      }
+
+      const blockedErr = new Error(
+        `La solicitud contiene datos críticos bloqueados por seguridad (${analysis.detectionTypes.join(', ')}). No se enviará a la IA.`
+      );
+      (blockedErr as any).code = 'SENSITIVE_DATA_BLOCKED';
+      (blockedErr as any).statusCode = 400;
+      throw blockedErr;
+    }
+
+    // 2. Redacción opcional de datos personales antes de llamar a Groq
+    let textToProcess = text;
+    let redactionInfo: ReturnType<typeof sensitiveDataGuard.redact> | null = null;
+
+    if (redactSensitiveData) {
+      redactionInfo = sensitiveDataGuard.redact(text);
+      textToProcess = redactionInfo.redactedText;
+    }
+
+    // 3. Validar límite mensual de tokens si el usuario tiene una cuota configurada
+    let userRecord: any = null;
     if (userId) {
       try {
-        const user = await userRepository.findSafeById(userId);
-        if (user && typeof user.monthlyTokenLimit === 'number' && user.monthlyTokenLimit > 0) {
+        userRecord = await userRepository.findSafeById(userId);
+        if (userRecord && typeof userRecord.monthlyTokenLimit === 'number' && userRecord.monthlyTokenLimit > 0) {
           const usedTokens = await usageService.getUserMonthlyTokenUsage(userId);
-          if (usedTokens >= user.monthlyTokenLimit) {
+          if (usedTokens >= userRecord.monthlyTokenLimit) {
             const limitError = new Error(
-              `Has alcanzado tu límite mensual de tokens de IA (${usedTokens.toLocaleString()} / ${user.monthlyTokenLimit.toLocaleString()}). Comunícate con el administrador.`
+              `Has alcanzado tu límite mensual de tokens de IA (${usedTokens.toLocaleString()} / ${userRecord.monthlyTokenLimit.toLocaleString()}). Comunícate con el administrador.`
             );
             (limitError as any).code = 'MONTHLY_AI_LIMIT_REACHED';
             (limitError as any).statusCode = 429;
@@ -51,22 +89,30 @@ export class AiService {
         if (err.code === 'MONTHLY_AI_LIMIT_REACHED') {
           throw err;
         }
-        // Si hay un error al chequear el límite que no sea limit reached, continuar
       }
     }
 
     const systemPrompt = buildSystemPrompt(action, tone, paraphraseLevel);
 
     try {
-      const result = await groqService.generateCompletion(systemPrompt, text);
+      const result = await groqService.generateCompletion(systemPrompt, textToProcess);
 
-      // Persistencia en base de datos sin bloquear respuesta si la BD falla
+      // Restaurar datos si se aplicó redacción
+      let finalResultText = result.result;
+      if (redactionInfo && redactionInfo.hasRedactions) {
+        finalResultText = sensitiveDataGuard.restore(finalResultText, redactionInfo.replacements);
+        result.result = finalResultText;
+      }
+
+      // 4. Persistencia respetando el consentimiento de privacidad (saveAiHistory)
       try {
+        const shouldSaveContent = userRecord ? userRecord.saveAiHistory !== false : true;
+
         await historyRepository.create({
           userId,
           action: ACTION_PRISMA_MAP[action] || PrismaAiAction.PROFESSIONALIZE,
-          originalText: text,
-          resultText: result.result,
+          originalText: shouldSaveContent ? text : null,
+          resultText: shouldSaveContent ? result.result : null,
           tone: TONE_PRISMA_MAP[tone] || PrismaTone.PROFESSIONAL,
           paraphraseLevel: LEVEL_PRISMA_MAP[paraphraseLevel] || PrismaParaphraseLevel.MEDIUM,
           model: result.model,
@@ -76,13 +122,12 @@ export class AiService {
           latencyMs: result.latencyMs,
         });
       } catch (dbError) {
-        // Registro técnico seguro sin exponer el texto laboral
         console.warn('[History] Advertencia: No se pudo registrar la consulta en PostgreSQL:', dbError instanceof Error ? dbError.message : dbError);
       }
 
       return result;
     } catch (error: unknown) {
-      if ((error as any).code === 'MONTHLY_AI_LIMIT_REACHED') {
+      if ((error as any).code === 'MONTHLY_AI_LIMIT_REACHED' || (error as any).code === 'SENSITIVE_DATA_BLOCKED') {
         throw error;
       }
 

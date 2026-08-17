@@ -49,6 +49,7 @@ model User {
   status             UserStatus    @default(ACTIVE)
   mustChangePassword Boolean       @default(true)
   monthlyTokenLimit  Int?
+  saveAiHistory      Boolean       @default(true)
   lastLoginAt        DateTime?
   passwordChangedAt  DateTime?
   createdAt          DateTime      @default(now())
@@ -66,6 +67,7 @@ model AuthSession {
   id         String    @id @default(uuid())
   userId     String
   tokenHash  String    @unique
+  familyId   String?
   expiresAt  DateTime
   revokedAt  DateTime?
   createdAt  DateTime  @default(now())
@@ -75,6 +77,7 @@ model AuthSession {
 
   @@index([userId])
   @@index([tokenHash])
+  @@index([familyId])
   @@map("auth_sessions")
 }
 
@@ -115,8 +118,8 @@ model AiHistory {
   id              String          @id @default(uuid())
   userId          String?
   action          AiAction
-  originalText    String          @db.Text
-  resultText      String          @db.Text
+  originalText    String?         @db.Text
+  resultText      String?         @db.Text
   tone            Tone            @default(PROFESSIONAL)
   paraphraseLevel ParaphraseLevel @default(MEDIUM)
   model           String          @default("llama-3.1-8b-instant")

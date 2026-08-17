@@ -1,6 +1,17 @@
 import { authService } from '../sidepanel/services/auth-service';
 import { adminApiClient, SharedTemplate, UserUsageMetric } from './admin-api-client';
 
+export function escapeHtml(str: unknown): string {
+  if (str === null || str === undefined) return '';
+  const s = String(str);
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function showAdminToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
   const container = document.getElementById('admin-toast-container');
   if (!container) return;
@@ -150,9 +161,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           const pct = u.percentageUsed !== null ? `${u.percentageUsed}%` : '-';
           return `
             <tr>
-              <td><strong>${u.displayName}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${u.email}</span></td>
-              <td><span class="role-pill role-${u.role.toLowerCase()}">${u.role}</span></td>
-              <td><span class="status-pill status-${u.status.toLowerCase()}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
+              <td><strong>${escapeHtml(u.displayName)}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(u.email)}</span></td>
+              <td><span class="role-pill role-${escapeHtml(u.role.toLowerCase())}">${escapeHtml(u.role)}</span></td>
+              <td><span class="status-pill status-${escapeHtml(u.status.toLowerCase())}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
               <td>${u.requestsMonth.toLocaleString()}</td>
               <td><strong>${u.totalTokensMonth.toLocaleString()}</strong></td>
               <td>${limitText}</td>
@@ -197,18 +208,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         return `
           <tr>
-            <td><strong>${u.displayName}</strong></td>
-            <td>${u.email}</td>
-            <td><span class="role-pill role-${u.role.toLowerCase()}">${u.role}</span></td>
-            <td><span class="status-pill status-${u.status.toLowerCase()}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
+            <td><strong>${escapeHtml(u.displayName)}</strong></td>
+            <td>${escapeHtml(u.email)}</td>
+            <td><span class="role-pill role-${escapeHtml(u.role.toLowerCase())}">${escapeHtml(u.role)}</span></td>
+            <td><span class="status-pill status-${escapeHtml(u.status.toLowerCase())}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
             <td>${limitText}</td>
             <td>${lastAccess}</td>
             <td>
               <div class="table-actions-cell">
-                <button type="button" class="btn-action-sm btn-edit-user" data-id="${u.id}" data-name="${u.displayName}" data-role="${u.role}">Editar</button>
-                <button type="button" class="btn-action-sm ${toggleStatusClass} btn-toggle-status" data-id="${u.id}" data-status="${u.status}">${toggleStatusText}</button>
-                <button type="button" class="btn-action-sm btn-reset-pwd" data-id="${u.id}" data-email="${u.email}">Reset Clave</button>
-                <button type="button" class="btn-action-sm btn-set-limit" data-id="${u.id}" data-name="${u.displayName}" data-limit="${u.monthlyTokenLimit ?? ''}">Límite</button>
+                <button type="button" class="btn-action-sm btn-edit-user" data-id="${escapeHtml(u.id)}" data-name="${escapeHtml(u.displayName)}" data-role="${escapeHtml(u.role)}">Editar</button>
+                <button type="button" class="btn-action-sm ${toggleStatusClass} btn-toggle-status" data-id="${escapeHtml(u.id)}" data-status="${escapeHtml(u.status)}">${toggleStatusText}</button>
+                <button type="button" class="btn-action-sm btn-reset-pwd" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(u.email)}">Reset Clave</button>
+                <button type="button" class="btn-action-sm btn-set-limit" data-id="${escapeHtml(u.id)}" data-name="${escapeHtml(u.displayName)}" data-limit="${u.monthlyTokenLimit ?? ''}">Límite</button>
               </div>
             </td>
           </tr>
@@ -385,8 +396,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         return `
           <tr>
-            <td><strong>${u.displayName}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${u.email}</span></td>
-            <td><span class="status-pill status-${u.status.toLowerCase()}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
+            <td><strong>${escapeHtml(u.displayName)}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(u.email)}</span></td>
+            <td><span class="status-pill status-${escapeHtml(u.status.toLowerCase())}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
             <td>${u.requestsToday.toLocaleString()}</td>
             <td>${u.requestsMonth.toLocaleString()}</td>
             <td>${u.inputTokensMonth.toLocaleString()}</td>
@@ -395,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td>${progressHtml}</td>
             <td>$${u.estimatedCostUsd.toFixed(4)} USD</td>
             <td>
-              <button type="button" class="btn-action-sm btn-set-limit" data-id="${u.userId}" data-name="${u.displayName}" data-limit="${u.monthlyTokenLimit ?? ''}">Ajustar Límite</button>
+              <button type="button" class="btn-action-sm btn-set-limit" data-id="${escapeHtml(u.userId)}" data-name="${escapeHtml(u.displayName)}" data-limit="${u.monthlyTokenLimit ?? ''}">Ajustar Límite</button>
             </td>
           </tr>
         `;
@@ -428,10 +439,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       adminApiClient.getCategories(),
     ]);
 
-    // Llenar select de categorías en modal
+    // Llenar select de categorías en modal de forma segura
     const catSelect = document.getElementById('tmpl-category') as HTMLSelectElement;
     if (catSelect && catRes.success && catRes.data) {
-      catSelect.innerHTML = catRes.data.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
+      catSelect.innerHTML = catRes.data.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
     }
 
     if (libRes.success && libRes.data) {
@@ -445,14 +456,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dateStr = new Date(item.createdAt).toLocaleDateString('es-ES');
         return `
           <tr>
-            <td><strong>${item.title}</strong></td>
-            <td><span class="status-pill" style="background:#e0e7ff; color:#3730a3;">${item.category.name}</span></td>
-            <td style="color:var(--text-secondary); max-width: 320px;">${excerpt}</td>
+            <td><strong>${escapeHtml(item.title)}</strong></td>
+            <td><span class="status-pill" style="background:#e0e7ff; color:#3730a3;">${escapeHtml(item.category.name)}</span></td>
+            <td style="color:var(--text-secondary); max-width: 320px;">${escapeHtml(excerpt)}</td>
             <td>${dateStr}</td>
             <td>
               <div class="table-actions-cell">
-                <button type="button" class="btn-action-sm btn-edit-tmpl" data-id="${item.id}" data-title="${item.title}" data-content="${encodeURIComponent(item.content)}" data-category="${item.categoryId}">Editar</button>
-                <button type="button" class="btn-action-sm btn-action-danger btn-del-tmpl" data-id="${item.id}">Eliminar</button>
+                <button type="button" class="btn-action-sm btn-edit-tmpl" data-id="${escapeHtml(item.id)}" data-title="${escapeHtml(item.title)}" data-content="${encodeURIComponent(item.content)}" data-category="${escapeHtml(item.categoryId)}">Editar</button>
+                <button type="button" class="btn-action-sm btn-action-danger btn-del-tmpl" data-id="${escapeHtml(item.id)}">Eliminar</button>
               </div>
             </td>
           </tr>
@@ -547,13 +558,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       tbody.innerHTML = res.data.items.map((a) => {
         const timeStr = new Date(a.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' });
-        const metaStr = a.metadata ? Object.entries(a.metadata).map(([k, v]) => `${k}: ${v}`).join(', ') : '-';
+        const metaStr = a.metadata ? Object.entries(a.metadata).map(([k, v]) => `${escapeHtml(k)}: ${escapeHtml(v)}`).join(', ') : '-';
         return `
           <tr>
             <td>${timeStr}</td>
-            <td><strong>${a.actor.displayName}</strong> (${a.actor.email})</td>
-            <td><span class="status-pill status-active">${a.action}</span></td>
-            <td>${a.targetType}</td>
+            <td><strong>${escapeHtml(a.actor.displayName)}</strong> (${escapeHtml(a.actor.email)})</td>
+            <td><span class="status-pill status-active">${escapeHtml(a.action)}</span></td>
+            <td>${escapeHtml(a.targetType)}</td>
             <td style="font-size:0.75rem; color:var(--text-secondary);">${metaStr}</td>
           </tr>
         `;
@@ -580,12 +591,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.innerHTML = usersRes.data.items.map((u) => {
         return `
           <tr>
-            <td><strong>${u.displayName}</strong></td>
-            <td>${u.email}</td>
-            <td><span class="role-pill role-${u.role.toLowerCase()}">${u.role}</span></td>
-            <td><span class="status-pill status-${u.status.toLowerCase()}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
+            <td><strong>${escapeHtml(u.displayName)}</strong></td>
+            <td>${escapeHtml(u.email)}</td>
+            <td><span class="role-pill role-${escapeHtml(u.role.toLowerCase())}">${escapeHtml(u.role)}</span></td>
+            <td><span class="status-pill status-${escapeHtml(u.status.toLowerCase())}">${u.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td>
             <td>
-              <button type="button" class="btn-action-sm btn-action-danger btn-revoke-user-sessions" data-id="${u.id}">Revocar Sesiones</button>
+              <button type="button" class="btn-action-sm btn-action-danger btn-revoke-user-sessions" data-id="${escapeHtml(u.id)}">Revocar Sesiones</button>
             </td>
           </tr>
         `;

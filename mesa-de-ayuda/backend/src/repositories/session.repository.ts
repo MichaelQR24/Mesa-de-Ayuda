@@ -1,17 +1,38 @@
 import { prisma } from '../lib/prisma.js';
 import { AuthSession } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export class SessionRepository {
   async createSession(data: {
     userId: string;
     tokenHash: string;
     expiresAt: Date;
+    familyId?: string | null;
   }): Promise<AuthSession> {
     return prisma.authSession.create({
       data: {
         userId: data.userId,
         tokenHash: data.tokenHash,
+        familyId: data.familyId ?? randomUUID(),
         expiresAt: data.expiresAt,
+      },
+    });
+  }
+
+  async findByTokenHash(tokenHash: string): Promise<(AuthSession & { user: { id: string; email: string; displayName: string; role: any; status: any; mustChangePassword: boolean } }) | null> {
+    return prisma.authSession.findFirst({
+      where: { tokenHash },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            role: true,
+            status: true,
+            mustChangePassword: true,
+          },
+        },
       },
     });
   }
@@ -39,11 +60,11 @@ export class SessionRepository {
   }
 
   /**
-   * Rota el refresh token atómicamente: revoca el token anterior y crea la nueva sesión.
+   * Rota el refresh token atómicamente manteniendo el mismo familyId.
    */
   async rotateSession(
     oldTokenHash: string,
-    newSession: { userId: string; tokenHash: string; expiresAt: Date }
+    newSession: { userId: string; tokenHash: string; expiresAt: Date; familyId?: string | null }
   ): Promise<AuthSession> {
     return prisma.$transaction(async (tx) => {
       await tx.authSession.updateMany({
@@ -55,6 +76,7 @@ export class SessionRepository {
         data: {
           userId: newSession.userId,
           tokenHash: newSession.tokenHash,
+          familyId: newSession.familyId ?? randomUUID(),
           expiresAt: newSession.expiresAt,
         },
       });
@@ -64,6 +86,13 @@ export class SessionRepository {
   async revokeSession(tokenHash: string): Promise<void> {
     await prisma.authSession.updateMany({
       where: { tokenHash },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  async revokeFamily(familyId: string): Promise<void> {
+    await prisma.authSession.updateMany({
+      where: { familyId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
   }

@@ -37,6 +37,7 @@ export interface AiProcessRequestParams {
   action: 'correct' | 'paraphrase' | 'professionalize' | 'summarize' | 'reply';
   tone?: 'professional' | 'formal' | 'friendly' | 'technical' | 'casual';
   paraphraseLevel?: 'soft' | 'medium' | 'complete';
+  redactSensitiveData?: boolean;
 }
 
 async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
@@ -186,6 +187,18 @@ export async function deleteRemoteLibraryItem(id: string): Promise<{ success: bo
   try {
     const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LIBRARY}/${id}`, {
       method: 'DELETE',
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
+  }
+}
+
+export async function updatePrivacyPreferences(saveAiHistory: boolean): Promise<{ success: boolean; data?: any; error?: { message?: string } }> {
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}/api/v1/auth/privacy`, {
+      method: 'PATCH',
+      body: JSON.stringify({ saveAiHistory }),
     });
     return await response.json();
   } catch (error) {
