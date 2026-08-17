@@ -1,11 +1,12 @@
 {
   "name": "mesa-de-ayuda-extension",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "Extensión de Chrome para asistencia de soporte técnico - Mesa de Ayuda",
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "tsc --noEmit && vite build",
+    "dev": "vite build --watch --mode development",
+    "build": "tsc --noEmit && vite build --mode production",
+    "build:dev": "tsc --noEmit && vite build --mode development",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

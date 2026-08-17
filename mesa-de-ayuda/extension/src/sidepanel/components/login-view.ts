@@ -41,6 +41,14 @@ export class LoginView {
     this.submitBtn.disabled = true;
     this.submitBtn.textContent = 'Iniciando sesión...';
 
+    // Temporizador para advertir al usuario sobre el Cold Start de Render Free
+    const coldStartTimer = setTimeout(() => {
+      if (this.submitBtn.disabled) {
+        this.submitBtn.textContent = 'Conectando con el servidor (iniciando)...';
+        showToast('El servidor se está iniciando en la nube, por favor espera unos segundos...', 'info');
+      }
+    }, 3500);
+
     try {
       const result = await authService.login(email, password);
 
@@ -60,8 +68,9 @@ export class LoginView {
         await assistantView.checkPendingSelection();
       }
     } catch {
-      showToast('Error de conexión con el servidor', 'error');
+      showToast('No se pudo conectar con el servidor. Verifica tu conexión a Internet.', 'error');
     } finally {
+      clearTimeout(coldStartTimer);
       this.submitBtn.disabled = false;
       this.submitBtn.textContent = 'Iniciar sesión';
     }
@@ -69,3 +78,4 @@ export class LoginView {
 }
 
 export const loginView = new LoginView();
+

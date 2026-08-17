@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Mesa de Ayuda",
-  "version": "1.0.0",
-  "description": "Asistente de redacción para soporte técnico",
+  "version": "0.9.0",
+  "description": "Asistente de redacción inteligente y mesa de ayuda para soporte técnico",
   "permissions": [
     "sidePanel",
     "storage",
@@ -11,7 +11,8 @@
     "scripting"
   ],
   "host_permissions": [
-    "http://localhost:3000/*"
+    "http://localhost:3000/*",
+    "https://*.onrender.com/*"
   ],
   "action": {
     "default_title": "Abrir Mesa de Ayuda",

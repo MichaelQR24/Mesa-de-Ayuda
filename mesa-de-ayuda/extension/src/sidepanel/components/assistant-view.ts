@@ -353,6 +353,12 @@ export class AssistantView {
 
     this.setProcessingState(true);
 
+    const coldStartTimer = setTimeout(() => {
+      if (this.isProcessing) {
+        showToast('Conectando con la nube... (iniciando servidor en reposo)', 'info');
+      }
+    }, 3500);
+
     try {
       const response = await processAiText({
         text: originalText,
@@ -392,6 +398,7 @@ export class AssistantView {
       const msg = err instanceof Error ? err.message : 'Ocurrió un error al conectar con el servidor.';
       showToast(msg, 'error');
     } finally {
+      clearTimeout(coldStartTimer);
       this.setProcessingState(false);
     }
   }

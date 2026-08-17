@@ -1,5 +1,11 @@
+const resolveBaseUrl = (): string => {
+  const metaEnv = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env;
+  const envUrl = metaEnv?.VITE_API_BASE_URL;
+  return (envUrl && typeof envUrl === 'string' && envUrl.trim()) ? envUrl.trim() : 'http://localhost:3000';
+};
+
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3000',
+  BASE_URL: resolveBaseUrl(),
   ENDPOINTS: {
     HEALTH: '/health',
     TEST: '/api/v1/test',

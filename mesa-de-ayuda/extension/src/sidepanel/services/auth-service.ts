@@ -8,15 +8,29 @@ export interface UserSession {
   mustChangePassword: boolean;
 }
 
+async function safeJsonParse(response: Response): Promise<{ ok: boolean; data?: any; error?: string }> {
+  const text = await response.text();
+  try {
+    const json = JSON.parse(text);
+    return { ok: response.ok, data: json };
+  } catch {
+    if (response.status === 404) {
+      return { ok: false, error: `No se encontró el servicio en ${API_CONFIG.BASE_URL} (HTTP 404). Verifica que la URL del backend en Render sea correcta.` };
+    }
+    if (response.status === 502 || response.status === 503) {
+      return { ok: false, error: `El servidor en ${API_CONFIG.BASE_URL} está iniciando o no disponible temporalmente (HTTP ${response.status}). Intenta en unos segundos.` };
+    }
+    return { ok: false, error: text || `Error de comunicación con el servidor (HTTP ${response.status})` };
+  }
+}
+
 export class AuthService {
   private accessToken: string | null = null;
   private currentUser: UserSession | null = null;
 
   async init(): Promise<void> {
-    // Restaurar sesión desde storage si existe
     try {
       if (typeof chrome !== 'undefined' && chrome.storage) {
-        // Intenta leer access token de session storage
         if (chrome.storage.session) {
           const sessionData = await chrome.storage.session.get(['accessToken', 'user']) as { accessToken?: string; user?: UserSession };
           if (sessionData.accessToken) {
@@ -27,7 +41,6 @@ export class AuthService {
           }
         }
 
-        // Si no hay access token en session, intenta restaurar con refresh token de local storage
         if (!this.accessToken) {
           const localData = await chrome.storage.local.get(['refreshToken', 'user']) as { refreshToken?: string; user?: UserSession };
           if (localData.refreshToken) {
@@ -61,19 +74,18 @@ export class AuthService {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const parsed = await safeJsonParse(response);
 
-      if (!response.ok || !data.success) {
+      if (!parsed.ok || !parsed.data || !parsed.data.success) {
         return {
           success: false,
-          error: data.error?.message || 'Credenciales incorrectas.',
+          error: parsed.data?.error?.message || parsed.error || 'Credenciales incorrectas.',
         };
       }
 
-      this.accessToken = data.data.accessToken;
-      this.currentUser = data.data.user;
+      this.accessToken = parsed.data.data.accessToken;
+      this.currentUser = parsed.data.data.user;
 
-      // Guardar en storage seguro de Chrome
       if (typeof chrome !== 'undefined' && chrome.storage) {
         if (chrome.storage.session) {
           await chrome.storage.session.set({
@@ -83,7 +95,7 @@ export class AuthService {
         }
         if (chrome.storage.local) {
           await chrome.storage.local.set({
-            refreshToken: data.data.refreshToken,
+            refreshToken: parsed.data.data.refreshToken,
             user: this.currentUser,
           });
         }
@@ -116,59 +128,68 @@ export class AuthService {
         body: JSON.stringify({ refreshToken }),
       });
 
-      const data = await response.json();
+      const parsed = await safeJsonParse(response);
 
-      if (!response.ok || !data.success) {
-        await this.clearLocalSession();
+      if (!parsed.ok || !parsed.data || !parsed.data.success) {
+        await this.logout();
         return false;
       }
 
-      this.accessToken = data.data.accessToken;
+      this.accessToken = parsed.data.data.accessToken;
 
       if (chrome.storage.session) {
-        await chrome.storage.session.set({
-          accessToken: this.accessToken,
-          user: this.currentUser,
-        });
+        await chrome.storage.session.set({ accessToken: this.accessToken });
       }
-      await chrome.storage.local.set({
-        refreshToken: data.data.refreshToken,
-      });
+      if (chrome.storage.local) {
+        await chrome.storage.local.set({ refreshToken: parsed.data.data.refreshToken });
+      }
 
       return true;
     } catch {
+      await this.logout();
       return false;
     }
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const token = this.accessToken;
-      if (!token) return { success: false, error: 'No autenticado' };
+      if (!this.accessToken) {
+        return { success: false, error: 'No autenticado.' };
+      }
 
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_CHANGE_PASSWORD}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${this.accessToken}`,
         },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
 
-      const data = await response.json();
+      const parsed = await safeJsonParse(response);
 
-      if (!response.ok || !data.success) {
+      if (!parsed.ok || !parsed.data || !parsed.data.success) {
         return {
           success: false,
-          error: data.error?.message || 'Error al cambiar contraseña.',
+          error: parsed.data?.error?.message || parsed.error || 'Error al cambiar contraseña.',
         };
       }
 
-      if (this.currentUser) {
-        this.currentUser.mustChangePassword = false;
-        if (typeof chrome !== 'undefined' && chrome.storage) {
-          if (chrome.storage.session) await chrome.storage.session.set({ user: this.currentUser });
-          if (chrome.storage.local) await chrome.storage.local.set({ user: this.currentUser });
+      this.accessToken = parsed.data.data.accessToken;
+      this.currentUser = parsed.data.data.user;
+
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        if (chrome.storage.session) {
+          await chrome.storage.session.set({
+            accessToken: this.accessToken,
+            user: this.currentUser,
+          });
+        }
+        if (chrome.storage.local) {
+          await chrome.storage.local.set({
+            refreshToken: parsed.data.data.refreshToken,
+            user: this.currentUser,
+          });
         }
       }
 
@@ -176,38 +197,33 @@ export class AuthService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error de red.',
+        error: error instanceof Error ? error.message : 'Error al conectar con el servidor.',
       };
     }
   }
 
   async logout(): Promise<void> {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        const { refreshToken } = (await chrome.storage.local.get(['refreshToken'])) as { refreshToken?: string };
-        if (refreshToken) {
-          await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_LOGOUT}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          }).catch(() => {});
-        }
+      if (this.accessToken) {
+        await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_LOGOUT}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+        }).catch(() => {});
       }
     } finally {
-      await this.clearLocalSession();
-    }
-  }
+      this.accessToken = null;
+      this.currentUser = null;
 
-  private async clearLocalSession(): Promise<void> {
-    this.accessToken = null;
-    this.currentUser = null;
-
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      if (chrome.storage.session) {
-        await chrome.storage.session.remove(['accessToken', 'user']).catch(() => {});
-      }
-      if (chrome.storage.local) {
-        await chrome.storage.local.remove(['refreshToken', 'user']).catch(() => {});
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        if (chrome.storage.session) {
+          await chrome.storage.session.remove(['accessToken', 'user']).catch(() => {});
+        }
+        if (chrome.storage.local) {
+          await chrome.storage.local.remove(['refreshToken', 'user']).catch(() => {});
+        }
       }
     }
   }
