@@ -13,11 +13,15 @@ export default defineConfig({
       input: {
         sidepanel: resolve(rootDir, 'src/sidepanel/index.html'),
         'service-worker': resolve(rootDir, 'src/background/service-worker.ts'),
+        content: resolve(rootDir, 'src/content/content-script.ts'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'service-worker') {
             return 'service-worker.js';
+          }
+          if (chunkInfo.name === 'content') {
+            return 'content-script.js';
           }
           return 'assets/[name]-[hash].js';
         },

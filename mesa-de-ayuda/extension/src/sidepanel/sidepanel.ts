@@ -1,9 +1,12 @@
 /**
  * Side Panel Entry Point - Mesa de Ayuda
- * Inicializa navegación, vistas y almacenamiento local
+ * Inicializa autenticación, navegación, vistas y almacenamiento seguro
  */
 
+import { authService } from './services/auth-service';
 import { navigationManager } from './components/navigation';
+import { loginView } from './components/login-view';
+import { changePasswordView } from './components/change-password-view';
 import { assistantView } from './components/assistant-view';
 import { libraryView } from './components/library-view';
 import { historyView } from './components/history-view';
@@ -12,17 +15,22 @@ import { settingsView } from './components/settings-view';
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // 1. Inicializar navegación entre pestañas
-    navigationManager.init();
+    // 1. Inicializar servicio de autenticación
+    await authService.init();
 
-    // 2. Inicializar componentes de vistas
+    // 2. Inicializar gestores de navegación y formularios de auth
+    navigationManager.init();
+    loginView.init();
+    changePasswordView.init();
+
+    // 3. Inicializar componentes de vistas
     await settingsView.init();
     await assistantView.init();
     await libraryView.init();
     await historyView.init();
     await savedView.init();
 
-    // 3. Suscribirse a cambios de pestaña para refrescar datos dinámicamente
+    // 4. Suscribirse a cambios de pestaña para refrescar datos dinámicamente
     navigationManager.onTabChange((tab) => {
       switch (tab) {
         case 'asistente':
@@ -43,7 +51,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    console.log('[Mesa de Ayuda] Frontend del Side Panel inicializado correctamente (Fase 2).');
+    // 5. Determinar vista inicial según el estado de sesión
+    const user = authService.getUser();
+    if (!authService.isAuthenticated() || !user) {
+      navigationManager.showLogin();
+    } else if (user.mustChangePassword) {
+      navigationManager.showChangePassword();
+    } else {
+      navigationManager.showAuthenticatedApp();
+    }
+
+    console.log('[Mesa de Ayuda] Frontend del Side Panel inicializado correctamente (Fase 6).');
   } catch (error) {
     console.error('[Mesa de Ayuda] Error inicializando el Side Panel:', error);
   }

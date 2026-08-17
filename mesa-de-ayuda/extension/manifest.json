@@ -5,7 +5,10 @@
   "description": "Asistente de redacción para soporte técnico",
   "permissions": [
     "sidePanel",
-    "storage"
+    "storage",
+    "contextMenus",
+    "activeTab",
+    "scripting"
   ],
   "host_permissions": [
     "http://localhost:3000/*"
@@ -22,6 +25,13 @@
     "service_worker": "service-worker.js",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "side_panel": {
     "default_path": "src/sidepanel/index.html"
   },

@@ -1,4 +1,6 @@
 import { NavTab } from '../types';
+import { authService } from '../services/auth-service';
+import { showToast } from './toast';
 
 export class NavigationManager {
   private currentTab: NavTab = 'asistente';
@@ -14,6 +16,13 @@ export class NavigationManager {
         }
       });
     });
+
+    const logoutBtn = document.getElementById('btn-logout');
+    logoutBtn?.addEventListener('click', async () => {
+      await authService.logout();
+      showToast('Sesión cerrada correctamente', 'info');
+      this.showLogin();
+    });
   }
 
   onTabChange(listener: (tab: NavTab) => void): void {
@@ -22,6 +31,56 @@ export class NavigationManager {
 
   getCurrentTab(): NavTab {
     return this.currentTab;
+  }
+
+  showLogin(): void {
+    const navBar = document.getElementById('main-nav-bar');
+    const userBadge = document.getElementById('user-profile-badge');
+
+    navBar?.classList.add('hidden');
+    userBadge?.classList.add('hidden');
+
+    const views = document.querySelectorAll<HTMLElement>('.view-panel');
+    views.forEach((view) => {
+      view.classList.toggle('view-active', view.id === 'view-login');
+    });
+  }
+
+  showChangePassword(): void {
+    const navBar = document.getElementById('main-nav-bar');
+    const userBadge = document.getElementById('user-profile-badge');
+
+    navBar?.classList.add('hidden');
+    this.updateUserHeader();
+    userBadge?.classList.remove('hidden');
+
+    const views = document.querySelectorAll<HTMLElement>('.view-panel');
+    views.forEach((view) => {
+      view.classList.toggle('view-active', view.id === 'view-change-password');
+    });
+  }
+
+  showAuthenticatedApp(): void {
+    const navBar = document.getElementById('main-nav-bar');
+    const userBadge = document.getElementById('user-profile-badge');
+
+    navBar?.classList.remove('hidden');
+    this.updateUserHeader();
+    userBadge?.classList.remove('hidden');
+
+    this.switchTab('asistente');
+  }
+
+  updateUserHeader(): void {
+    const user = authService.getUser();
+    const nameEl = document.getElementById('user-display-name');
+    const roleEl = document.getElementById('user-role-badge');
+
+    if (user && nameEl && roleEl) {
+      nameEl.textContent = user.displayName;
+      nameEl.title = `${user.displayName} (${user.email})`;
+      roleEl.textContent = user.role;
+    }
   }
 
   switchTab(tab: NavTab): void {

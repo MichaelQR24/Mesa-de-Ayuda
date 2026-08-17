@@ -18,13 +18,17 @@
           </div>
         </div>
         <div class="header-status">
+          <div id="user-profile-badge" class="user-profile-badge hidden">
+            <span id="user-display-name" class="user-name-label">Usuario</span>
+            <span id="user-role-badge" class="badge-role">USER</span>
+            <button type="button" id="btn-logout" class="btn-logout-icon" title="Cerrar sesión">⏻</button>
+          </div>
           <span class="status-indicator-dot" title="Sistema operativo"></span>
-          <span class="status-label-badge">Activo</span>
         </div>
       </header>
 
-      <!-- Barra de Navegación -->
-      <nav class="nav-bar" role="tablist" aria-label="Navegación principal">
+      <!-- Barra de Navegación (visible solo con sesión activa) -->
+      <nav id="main-nav-bar" class="nav-bar hidden" role="tablist" aria-label="Navegación principal">
         <button type="button" class="nav-tab-btn active" data-tab="asistente" role="tab" aria-selected="true">
           <span class="nav-tab-text">Asistente</span>
         </button>
@@ -44,18 +48,121 @@
 
       <!-- Contenedor Principal de Vistas -->
       <main class="main-content">
+        <!-- 0. VISTA INICIAR SESIÓN -->
+        <section id="view-login" class="view-panel view-active">
+          <div class="card-section auth-card">
+            <div class="auth-header">
+              <div class="auth-logo-circle">🔐</div>
+              <h2 class="view-heading">Iniciar Sesión</h2>
+              <p class="view-subheading">Acceso al asistente de redacción para soporte técnico.</p>
+            </div>
+
+            <form id="form-login" class="auth-form" novalidate>
+              <div class="option-field">
+                <label for="login-email" class="field-label">Correo electrónico</label>
+                <input
+                  type="email"
+                  id="login-email"
+                  class="app-input"
+                  placeholder="usuario@dominio.com"
+                  required
+                  autocomplete="username"
+                />
+              </div>
+
+              <div class="option-field">
+                <label for="login-password" class="field-label">Contraseña</label>
+                <div class="password-input-wrapper">
+                  <input
+                    type="password"
+                    id="login-password"
+                    class="app-input"
+                    placeholder="••••••••••••"
+                    required
+                    autocomplete="current-password"
+                  />
+                  <button type="button" id="btn-toggle-password" class="btn-toggle-visibility" title="Mostrar/ocultar contraseña">👁</button>
+                </div>
+              </div>
+
+              <button type="submit" id="btn-submit-login" class="btn-primary-action btn-full btn-auth-submit">
+                <span class="btn-text">Iniciar sesión</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 0.1 VISTA CAMBIO OBLIGATORIO DE CONTRASEÑA -->
+        <section id="view-change-password" class="view-panel">
+          <div class="card-section auth-card">
+            <div class="auth-header">
+              <div class="auth-logo-circle">🔑</div>
+              <h2 class="view-heading">Cambiar Contraseña</h2>
+              <p class="view-subheading">Por motivos de seguridad, debe actualizar su contraseña temporal antes de continuar.</p>
+            </div>
+
+            <form id="form-change-password" class="auth-form" novalidate>
+              <div class="option-field">
+                <label for="current-password" class="field-label">Contraseña actual</label>
+                <input
+                  type="password"
+                  id="current-password"
+                  class="app-input"
+                  placeholder="Contraseña temporal"
+                  required
+                />
+              </div>
+
+              <div class="option-field">
+                <label for="new-password" class="field-label">Nueva contraseña</label>
+                <input
+                  type="password"
+                  id="new-password"
+                  class="app-input"
+                  placeholder="Mínimo 10 caracteres (1 letra y 1 número)"
+                  required
+                />
+                <span class="field-hint">Mínimo 10 caracteres, al menos una letra y un número.</span>
+              </div>
+
+              <div class="option-field">
+                <label for="confirm-new-password" class="field-label">Confirmar nueva contraseña</label>
+                <input
+                  type="password"
+                  id="confirm-new-password"
+                  class="app-input"
+                  placeholder="Repite la nueva contraseña"
+                  required
+                />
+              </div>
+
+              <button type="submit" id="btn-submit-change-password" class="btn-primary-action btn-full btn-auth-submit">
+                <span class="btn-text">Actualizar contraseña y acceder</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
         <!-- 1. VISTA ASISTENTE -->
-        <section id="view-asistente" class="view-panel view-active">
+        <section id="view-asistente" class="view-panel">
           <!-- Entrada de Texto -->
           <div class="card-section">
             <div class="section-label-row">
-              <label for="input-text" class="field-label">Texto original</label>
-              <span id="char-count" class="char-counter">0 / 5000 caracteres</span>
+              <div class="label-with-source">
+                <label for="input-text" class="field-label">Texto original</label>
+                <span id="source-indicator" class="source-indicator-badge hidden">Origen: selección de página</span>
+              </div>
+              <div class="header-tools-right">
+                <button type="button" id="btn-get-selection" class="btn-sm btn-outline-action" title="Capturar texto actualmente seleccionado en la pestaña activa">
+                  <span>📄 Obtener selección</span>
+                </button>
+                <span id="char-count" class="char-counter">0 / 5000</span>
+              </div>
             </div>
             <textarea
               id="input-text"
               class="app-textarea input-textarea"
-              placeholder="Escribe o pega aquí el texto que deseas procesar..."
+              placeholder="Escribe, pega o captura el texto que deseas procesar..."
               maxlength="5000"
               rows="4"
             ></textarea>
@@ -103,10 +210,10 @@
             </div>
           </div>
 
-          <!-- Indicador de Carga Simulado -->
+          <!-- Indicador de Carga -->
           <div id="loading-indicator" class="loading-bar-container">
             <div class="spinner"></div>
-            <span class="loading-text">Procesando texto con asistente local...</span>
+            <span class="loading-text">Procesando texto con IA...</span>
           </div>
 
           <!-- Sección de Resultado -->
@@ -127,6 +234,9 @@
               <div class="result-left-actions">
                 <button type="button" id="btn-copy-result" class="btn-outline">
                   <span>Copiar</span>
+                </button>
+                <button type="button" id="btn-replace-selection" class="btn-primary-action btn-sm hidden" title="Reemplazar directamente el texto seleccionado en la página web">
+                  <span>↩ Reemplazar</span>
                 </button>
                 <button type="button" id="btn-save-result" class="btn-outline">
                   <span>Guardar</span>
@@ -167,10 +277,10 @@
           <div class="panel-intro-header panel-header-flex">
             <div>
               <h2 class="view-heading">Historial de Consultas</h2>
-              <p class="view-subheading">Registro de transformaciones realizadas en esta sesión.</p>
+              <p class="view-subheading">Registro de tus transformaciones realizadas con IA.</p>
             </div>
             <button type="button" id="btn-clear-history" class="btn-danger-outline btn-sm">
-              Vaciar historial
+              Vaciar local
             </button>
           </div>
 
@@ -242,7 +352,7 @@
             </div>
           </div>
 
-          <!-- Diagnóstico de Backend Local (Fase 3) -->
+          <!-- Diagnóstico de Backend Local -->
           <div class="card-section backend-diag-card">
             <div class="setting-item">
               <h3 class="setting-label">Diagnóstico de Conexión Backend</h3>
@@ -262,7 +372,7 @@
 
       <!-- Pie de página -->
       <footer class="app-footer">
-        <span>Mesa de Ayuda v1.0.0 &bull; Fase 3 (Backend Base)</span>
+        <span>Mesa de Ayuda v1.0.0 &bull; Fase 6 (Autenticación y Roles)</span>
       </footer>
     </div>
 

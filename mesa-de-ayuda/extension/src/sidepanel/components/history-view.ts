@@ -3,6 +3,7 @@ import { navigationManager } from './navigation';
 import { assistantView } from './assistant-view';
 import { showToast } from './toast';
 import { HistoryItem } from '../types';
+import { fetchRemoteHistory } from '../services/api-client';
 
 export class HistoryView {
   private itemsListContainer!: HTMLElement;
@@ -13,16 +14,10 @@ export class HistoryView {
     this.clearHistoryBtn = document.getElementById('btn-clear-history') as HTMLButtonElement;
 
     this.clearHistoryBtn.addEventListener('click', async () => {
-      const items = await storageService.getHistory();
-      if (items.length === 0) {
-        showToast('El historial ya está vacío', 'info');
-        return;
-      }
-
-      if (window.confirm('¿Deseas vaciar todo el historial de consultas?')) {
+      if (window.confirm('¿Deseas vaciar el historial de consultas?')) {
         await storageService.clearHistory();
         await this.refresh();
-        showToast('Historial vaciado correctamente', 'info');
+        showToast('Historial local vaciado', 'info');
       }
     });
 
@@ -30,6 +25,25 @@ export class HistoryView {
   }
 
   async refresh(): Promise<void> {
+    try {
+      const remoteRes = await fetchRemoteHistory(50, 0);
+      if (remoteRes.success && remoteRes.data && remoteRes.data.items.length > 0) {
+        const mappedItems: HistoryItem[] = remoteRes.data.items.map((i) => ({
+          id: i.id,
+          action: i.action.toLowerCase() as any,
+          originalText: i.originalText,
+          resultText: i.resultText,
+          timestamp: new Date(i.createdAt).getTime(),
+          tone: i.tone.toLowerCase() as any,
+          paraphraseLevel: i.paraphraseLevel.toLowerCase() as any,
+        }));
+        this.renderItems(mappedItems);
+        return;
+      }
+    } catch {
+      // Ignora y usa almacenamiento local
+    }
+
     const items = await storageService.getHistory();
     this.renderItems(items);
   }

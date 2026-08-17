@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesa de Ayuda - Página de Pruebas de Selección y Reemplazo</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #e2e8f0;
+      --primary: #6366f1;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 1.5rem;
+      color: #1e293b;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .test-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .test-card h2 {
+      font-size: 1.1rem;
+      margin-top: 0;
+      color: #334155;
+    }
+    .test-card p.description {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .editable-box {
+      border: 1px dashed var(--primary);
+      background-color: #f5f3ff;
+      padding: 12px;
+      border-radius: 6px;
+      min-height: 60px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-forbidden { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Mesa de Ayuda - Banco de Pruebas Manuales (Fase 7)</h1>
+  <p>Utiliza los siguientes campos para verificar la detección de selección, menú contextual, captura y reemplazo de texto con la extensión de Chrome.</p>
+
+  <!-- 1. Texto Normal de Página -->
+  <div class="test-card">
+    <span class="badge badge-ok">Texto Normal de Página (Solo Lectura)</span>
+    <h2>1. Párrafo Estándar</h2>
+    <p class="description">Prueba: Selecciona parte de este texto, haz clic en "Obtener selección" o usa el menú contextual. Debe permitir procesar con IA y <strong>Copiar</strong>, pero el botón <strong>Reemplazar</strong> debe permanecer oculto.</p>
+    <p id="sample-paragraph">
+      El usuario se comunica indicando que presenta intermitencia constante al acceder a la VPN corporativa desde su equipo portátil.
+    </p>
+  </div>
+
+  <!-- 2. Textarea Editable -->
+  <div class="test-card">
+    <span class="badge badge-ok">Campo Textarea (Lectura y Reemplazo Soportado)</span>
+    <h2>2. Área de Texto para Tickets</h2>
+    <p class="description">Prueba: Selecciona el fragmento "el usuario no puede entrar al sistema", procésalo en el Asistente y haz clic en <strong>↩ Reemplazar</strong>. Debe sustituir únicamente el fragmento seleccionado conservando el texto circundante.</p>
+    <textarea id="sample-textarea" rows="3">Estimado equipo, el usuario no puede entrar al sistema debido a un bloqueo de credenciales. Por favor su apoyo.</textarea>
+  </div>
+
+  <!-- 3. Input Text -->
+  <div class="test-card">
+    <span class="badge badge-ok">Campo Input Text (Lectura y Reemplazo Soportado)</span>
+    <h2>3. Asunto o Título de Incidencia</h2>
+    <p class="description">Prueba: Selecciona texto dentro del input, procésalo y reemplázalo.</p>
+    <input type="text" id="sample-input" value="Solicitud urgente de restablecimiento de clave de acceso" />
+  </div>
+
+  <!-- 4. ContentEditable -->
+  <div class="test-card">
+    <span class="badge badge-ok">Elemento ContentEditable (Lectura y Reemplazo Soportado)</span>
+    <h2>4. Editor Enriquecido (contenteditable="true")</h2>
+    <p class="description">Prueba: Selecciona una frase dentro de este contenedor editable, procésala con IA y reemplázala.</p>
+    <div contenteditable="true" class="editable-box" id="sample-contenteditable">
+      Se procedió con la revisión del registro de eventos y se identificó un fallo en el servicio de autenticación LDAP.
+    </div>
+  </div>
+
+  <!-- 5. Campo de Contraseña (Seguridad Estricta) -->
+  <div class="test-card">
+    <span class="badge badge-forbidden">Campo Password (Bloqueo Estricto por Seguridad)</span>
+    <h2>5. Input de Contraseña</h2>
+    <p class="description">Prueba: Selecciona texto en este campo. La extensión <strong>NUNCA</strong> debe capturar ni exponer contraseñas.</p>
+    <input type="password" id="sample-password" value="ClaveSecreta12345!" />
+  </div>
+</body>
+</html>

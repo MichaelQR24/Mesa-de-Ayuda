@@ -4,6 +4,7 @@ import { navigationManager } from './navigation';
 import { assistantView } from './assistant-view';
 import { showToast } from './toast';
 import { LibraryItem } from '../types';
+import { fetchRemoteCategories, fetchRemoteLibrary, updateRemoteLibraryItem } from '../services/api-client';
 
 export class LibraryView {
   private searchInput!: HTMLInputElement;
@@ -13,19 +14,49 @@ export class LibraryView {
   private activeCategory = 'Todos';
   private searchQuery = '';
   private favoriteIds: string[] = [];
+  private currentItems: LibraryItem[] = [];
+  private categoriesList: string[] = [...LIBRARY_CATEGORIES];
 
   async init(): Promise<void> {
     this.searchInput = document.getElementById('library-search') as HTMLInputElement;
     this.categoryFiltersContainer = document.getElementById('library-categories') as HTMLElement;
     this.itemsListContainer = document.getElementById('library-items-list') as HTMLElement;
 
-    this.renderCategoryChips();
     this.setupEventListeners();
     await this.refresh();
   }
 
   async refresh(): Promise<void> {
     this.favoriteIds = await storageService.getFavoriteLibraryIds();
+
+    try {
+      const [catRes, libRes] = await Promise.all([
+        fetchRemoteCategories(),
+        fetchRemoteLibrary(),
+      ]);
+
+      if (catRes.success && catRes.data && catRes.data.length > 0) {
+        this.categoriesList = ['Todos', ...catRes.data.map((c) => c.name)];
+      }
+
+      if (libRes.success && libRes.data && libRes.data.length > 0) {
+        this.currentItems = libRes.data.map((item) => ({
+          id: item.id,
+          title: item.title,
+          category: item.category?.name || 'General',
+          content: item.content,
+        }));
+        this.favoriteIds = libRes.data.filter((i) => i.isFavorite).map((i) => i.id);
+        this.renderCategoryChips();
+        this.renderItems();
+        return;
+      }
+    } catch {
+      // Fallback
+    }
+
+    this.currentItems = [...INITIAL_LIBRARY_ITEMS];
+    this.renderCategoryChips();
     this.renderItems();
   }
 
@@ -38,7 +69,7 @@ export class LibraryView {
 
   private renderCategoryChips(): void {
     this.categoryFiltersContainer.textContent = '';
-    LIBRARY_CATEGORIES.forEach((cat) => {
+    this.categoriesList.forEach((cat) => {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = `chip-btn ${cat === this.activeCategory ? 'chip-active' : ''}`;
@@ -55,7 +86,7 @@ export class LibraryView {
   }
 
   private getFilteredItems(): LibraryItem[] {
-    return INITIAL_LIBRARY_ITEMS.filter((item) => {
+    return this.currentItems.filter((item) => {
       const matchesCategory = this.activeCategory === 'Todos' || item.category === this.activeCategory;
       const matchesSearch =
         !this.searchQuery ||
@@ -105,24 +136,32 @@ export class LibraryView {
       const favBtn = document.createElement('button');
       favBtn.type = 'button';
       favBtn.className = `icon-btn fav-btn ${isFav ? 'fav-active' : ''}`;
-      favBtn.title = isFav ? 'Quitar de guardados' : 'Guardar en favoritos';
+      favBtn.title = isFav ? 'Quitar de favoritos' : 'Guardar en favoritos';
       favBtn.textContent = isFav ? '★' : '☆';
       favBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        const nextState = !isFav;
+
+        try {
+          await updateRemoteLibraryItem(item.id, { isFavorite: nextState });
+        } catch {
+          // Ignora error de red y usa local
+        }
+
         const nowFav = await storageService.toggleFavoriteLibraryId(item.id);
-        if (nowFav) {
+        if (nextState || nowFav) {
           await storageService.saveItem({
-            id: `lib-fav-${item.id}`,
+            id: item.id,
             title: item.title,
             content: item.content,
             category: item.category,
             createdAt: Date.now(),
             isTemplate: true,
           });
-          showToast('Plantilla agregada a guardados', 'success');
+          showToast('Plantilla marcada como favorita', 'success');
         } else {
-          await storageService.removeSavedItem(`lib-fav-${item.id}`);
-          showToast('Plantilla removida de guardados', 'info');
+          await storageService.removeSavedItem(item.id);
+          showToast('Plantilla removida de favoritos', 'info');
         }
         await this.refresh();
       });
