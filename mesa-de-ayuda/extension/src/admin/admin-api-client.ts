@@ -218,4 +218,34 @@ export const adminApiClient = {
 
   // Categorías
   getCategories: () => adminFetch<Array<{ id: string; name: string }>>(`${API_CONFIG.BASE_URL}/api/v1/categories`),
+
+  // Estado del Sistema / Monitoreo
+  getSystemHealth: () => adminFetch<SystemHealthData>(`${API_CONFIG.BASE_URL}/api/v1/admin/system/health`),
 };
+
+export interface SystemHealthData {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  version: {
+    backend: string;
+  };
+  environment: string;
+  uptimeSeconds: number;
+  memory: {
+    heapUsedMb: number;
+    heapTotalMb: number;
+    rssMb: number;
+  };
+  database: {
+    status: 'connected' | 'slow' | 'disconnected';
+    latencyMs: number;
+  };
+  ai: {
+    status: string;
+    model: string;
+    requestsToday: number;
+    requestsMonth: number;
+    totalTokensMonth: number;
+    estimatedCostUsd: string;
+  };
+  timestamp: string;
+}

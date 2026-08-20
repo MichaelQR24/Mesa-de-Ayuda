@@ -17,6 +17,8 @@
     "security:secrets": "tsx scripts/secrets-scan.ts",
     "secrets:generate": "tsx scripts/generate-secrets.ts",
     "benchmark": "tsx scripts/benchmark.ts",
+    "maintenance:cleanup": "tsx scripts/maintenance-cleanup.ts",
+    "maintenance:cleanup:dry-run": "tsx scripts/maintenance-cleanup.ts --dry-run",
     "history:cleanup:dry-run": "tsx scripts/history-cleanup.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     biblioteca: 'Biblioteca Compartida',
     actividad: 'Actividad y Auditoría',
     seguridad: 'Seguridad y Sesiones',
+    sistema: 'Estado y Monitoreo del Sistema',
   };
 
   async function switchView(viewName: string) {
@@ -116,6 +117,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         break;
       case 'seguridad':
         await loadSecurity();
+        break;
+      case 'sistema':
+        await loadSystemHealth();
         break;
     }
   }
@@ -619,6 +623,83 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   }
+
+  // 8. VISTA ESTADO DEL SISTEMA (MONITOREO)
+  async function loadSystemHealth() {
+    const elBackendStatus = document.getElementById('system-backend-status');
+    const elBackendMeta = document.getElementById('system-backend-meta');
+    const elDbStatus = document.getElementById('system-db-status');
+    const elDbMeta = document.getElementById('system-db-meta');
+    const elAiStatus = document.getElementById('system-ai-status');
+    const elAiMeta = document.getElementById('system-ai-meta');
+
+    const elBackendVer = document.getElementById('sys-backend-version');
+    const elExtVer = document.getElementById('sys-ext-version');
+    const elEnv = document.getElementById('sys-environment');
+    const elUptime = document.getElementById('sys-uptime');
+    const elMem = document.getElementById('sys-memory');
+    const elAiMonth = document.getElementById('sys-ai-month');
+    const elAiCost = document.getElementById('sys-ai-cost');
+    const elLastCheck = document.getElementById('sys-last-check');
+
+    if (elBackendStatus) elBackendStatus.textContent = '⏳ Comprobando...';
+    if (elDbStatus) elDbStatus.textContent = '⏳ Comprobando...';
+    if (elAiStatus) elAiStatus.textContent = '⏳ Comprobando...';
+
+    const res = await adminApiClient.getSystemHealth();
+    if (res.success && res.data) {
+      const d = res.data;
+      if (elBackendStatus) {
+        elBackendStatus.textContent = d.status === 'healthy' ? '🟢 Operativo' : d.status === 'degraded' ? '🟡 Degradado' : '🔴 No disponible';
+      }
+      if (elBackendMeta) {
+        elBackendMeta.textContent = `v${d.version?.backend || '1.0.0'} • Uptime: ${Math.floor((d.uptimeSeconds || 0) / 60)} min`;
+      }
+
+      if (elDbStatus) {
+        elDbStatus.textContent = d.database?.status === 'connected' ? '🟢 Conectada' : d.database?.status === 'slow' ? '🟡 Lenta' : '🔴 No disponible';
+      }
+      if (elDbMeta) {
+        elDbMeta.textContent = `Latencia: ${d.database?.latencyMs ?? 0} ms`;
+      }
+
+      if (elAiStatus) {
+        elAiStatus.textContent = d.ai?.status === 'operational' ? '🟢 Operativo' : '🟡 Con incidencias';
+      }
+      if (elAiMeta) {
+        elAiMeta.textContent = `${d.ai?.model || 'Llama 3.1 8B'} • ${d.ai?.requestsToday || 0} hoy`;
+      }
+
+      if (elBackendVer) elBackendVer.textContent = d.version?.backend || '1.0.0';
+      if (elExtVer) elExtVer.textContent = '1.0.0';
+      if (elEnv) elEnv.textContent = d.environment === 'production' ? 'Producción (Cloud)' : (d.environment || 'Local');
+
+      const uptimeSec = d.uptimeSeconds || 0;
+      const hours = Math.floor(uptimeSec / 3600);
+      const minutes = Math.floor((uptimeSec % 3600) / 60);
+      const seconds = uptimeSec % 60;
+      if (elUptime) elUptime.textContent = `${hours}h ${minutes}m ${seconds}s`;
+
+      if (elMem) {
+        elMem.textContent = `Heap: ${d.memory?.heapUsedMb ?? 0} MB / Total: ${d.memory?.heapTotalMb ?? 0} MB (RSS: ${d.memory?.rssMb ?? 0} MB)`;
+      }
+      if (elAiMonth) {
+        elAiMonth.textContent = `${(d.ai?.requestsMonth || 0).toLocaleString()} consultas (${(d.ai?.totalTokensMonth || 0).toLocaleString()} tokens)`;
+      }
+      if (elAiCost) elAiCost.textContent = d.ai?.estimatedCostUsd || '$0.00';
+      if (elLastCheck) elLastCheck.textContent = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+    } else {
+      if (elBackendStatus) elBackendStatus.textContent = '🔴 No disponible';
+      if (elDbStatus) elDbStatus.textContent = '🔴 Sin conexión';
+      if (elAiStatus) elAiStatus.textContent = '🔴 Desconectado';
+      showAdminToast('No se pudo obtener el estado completo del sistema.', 'error');
+    }
+  }
+
+  document.getElementById('btn-refresh-system-health')?.addEventListener('click', async () => {
+    await loadSystemHealth();
+    showAdminToast('Estado del sistema actualizado.', 'success');
+  });
 
   // Cargar vista inicial
   await switchView('resumen');

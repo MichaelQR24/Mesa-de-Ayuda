@@ -18,6 +18,7 @@ import usageRoutes from './routes/usage.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import sessionAdminRoutes from './routes/session-admin.routes.js';
 import libraryAdminRoutes from './routes/library-admin.routes.js';
+import systemAdminRoutes from './routes/system-admin.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -120,6 +121,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/admin/audit', auditRoutes);
   app.use('/api/v1/admin/sessions', sessionAdminRoutes);
   app.use('/api/v1/admin/library', libraryAdminRoutes);
+  app.use('/api/v1/admin/system', systemAdminRoutes);
 
   // Rutas operativas
   app.use('/api/v1/test', testRoutes);

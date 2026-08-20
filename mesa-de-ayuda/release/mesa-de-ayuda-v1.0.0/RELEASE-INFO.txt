@@ -3,8 +3,8 @@ MESA DE AYUDA - ASISTENTE DE SOPORTE TÉCNICO
 Release Oficial v1.0.0 (Manifest V3)
 =====================================================
 Versión: 1.0.0
-Fecha de Compilación: 2026-08-17T03:52:40.751Z
-Git Commit: 7fa4c84
+Fecha de Compilación: 2026-08-20T03:18:36.306Z
+Git Commit: 5300f1d
 Backend Cloud: https://mesa-de-ayuda-j6uw.onrender.com
 Entorno: Producción (HTTPS)
 Requisitos del Usuario: Google Chrome + Internet
