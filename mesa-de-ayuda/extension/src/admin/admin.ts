@@ -633,66 +633,108 @@ document.addEventListener('DOMContentLoaded', async () => {
     const elAiStatus = document.getElementById('system-ai-status');
     const elAiMeta = document.getElementById('system-ai-meta');
 
+    const elBackendStatusDetail = document.getElementById('sys-backend-status-detail');
     const elBackendVer = document.getElementById('sys-backend-version');
     const elExtVer = document.getElementById('sys-ext-version');
     const elEnv = document.getElementById('sys-environment');
     const elUptime = document.getElementById('sys-uptime');
-    const elMem = document.getElementById('sys-memory');
+    const elDbLatency = document.getElementById('sys-db-latency');
+    const elAiModel = document.getElementById('sys-ai-model');
+    const elAiToday = document.getElementById('sys-ai-today');
     const elAiMonth = document.getElementById('sys-ai-month');
+    const elAiTokens = document.getElementById('sys-ai-tokens-month');
     const elAiCost = document.getElementById('sys-ai-cost');
+    const elMemHeap = document.getElementById('sys-memory-heap');
+    const elMemRss = document.getElementById('sys-memory-rss');
     const elLastCheck = document.getElementById('sys-last-check');
 
     if (elBackendStatus) elBackendStatus.textContent = '⏳ Comprobando...';
     if (elDbStatus) elDbStatus.textContent = '⏳ Comprobando...';
     if (elAiStatus) elAiStatus.textContent = '⏳ Comprobando...';
 
-    const res = await adminApiClient.getSystemHealth();
-    if (res.success && res.data) {
-      const d = res.data;
-      if (elBackendStatus) {
-        elBackendStatus.textContent = d.status === 'healthy' ? '🟢 Operativo' : d.status === 'degraded' ? '🟡 Degradado' : '🔴 No disponible';
-      }
-      if (elBackendMeta) {
-        elBackendMeta.textContent = `v${d.version?.backend || '1.0.0'} • Uptime: ${Math.floor((d.uptimeSeconds || 0) / 60)} min`;
-      }
+    try {
+      const res = await adminApiClient.getSystemHealth();
+      if (res && res.success && res.data) {
+        const d = res.data;
 
-      if (elDbStatus) {
-        elDbStatus.textContent = d.database?.status === 'connected' ? '🟢 Conectada' : d.database?.status === 'slow' ? '🟡 Lenta' : '🔴 No disponible';
-      }
-      if (elDbMeta) {
-        elDbMeta.textContent = `Latencia: ${d.database?.latencyMs ?? 0} ms`;
-      }
+        // 1. Tarjetas KPI
+        const isHealthy = d.status === 'healthy';
+        const isDegraded = d.status === 'degraded';
+        const statusIcon = isHealthy ? '🟢' : isDegraded ? '🟡' : '🔴';
+        const statusLabel = isHealthy ? 'Operativo' : isDegraded ? 'Degradado' : 'No disponible';
 
-      if (elAiStatus) {
-        elAiStatus.textContent = d.ai?.status === 'operational' ? '🟢 Operativo' : '🟡 Con incidencias';
-      }
-      if (elAiMeta) {
-        elAiMeta.textContent = `${d.ai?.model || 'Llama 3.1 8B'} • ${d.ai?.requestsToday || 0} hoy`;
-      }
+        if (elBackendStatus) elBackendStatus.textContent = `${statusIcon} ${statusLabel}`;
+        if (elBackendMeta) {
+          const uptimeMinutes = Math.floor((d.uptimeSeconds || 0) / 60);
+          elBackendMeta.textContent = `v${d.version?.backend || '1.0.0'} • Uptime: ${uptimeMinutes} min`;
+        }
 
-      if (elBackendVer) elBackendVer.textContent = d.version?.backend || '1.0.0';
-      if (elExtVer) elExtVer.textContent = '1.0.0';
-      if (elEnv) elEnv.textContent = d.environment === 'production' ? 'Producción (Cloud)' : (d.environment || 'Local');
+        const dbConnected = d.database?.status === 'connected';
+        const dbSlow = d.database?.status === 'slow';
+        if (elDbStatus) {
+          elDbStatus.textContent = dbConnected ? '🟢 Conectada' : dbSlow ? '🟡 Lenta' : '🔴 No disponible';
+        }
+        if (elDbMeta) {
+          elDbMeta.textContent = `Latencia: ${d.database?.latencyMs ?? 0} ms`;
+        }
 
-      const uptimeSec = d.uptimeSeconds || 0;
-      const hours = Math.floor(uptimeSec / 3600);
-      const minutes = Math.floor((uptimeSec % 3600) / 60);
-      const seconds = uptimeSec % 60;
-      if (elUptime) elUptime.textContent = `${hours}h ${minutes}m ${seconds}s`;
+        const aiOperational = d.ai?.status === 'operational';
+        if (elAiStatus) {
+          elAiStatus.textContent = aiOperational ? '🟢 Operativo' : '🟡 Con incidencias';
+        }
+        if (elAiMeta) {
+          elAiMeta.textContent = `${d.ai?.model || 'llama-3.1-8b-instant'} • ${d.ai?.requestsToday ?? 0} hoy`;
+        }
 
-      if (elMem) {
-        elMem.textContent = `Heap: ${d.memory?.heapUsedMb ?? 0} MB / Total: ${d.memory?.heapTotalMb ?? 0} MB (RSS: ${d.memory?.rssMb ?? 0} MB)`;
+        // 2. Tabla Detallada
+        if (elBackendStatusDetail) {
+          elBackendStatusDetail.textContent = `${statusIcon} ${d.status || 'healthy'}`;
+        }
+        if (elBackendVer) elBackendVer.textContent = d.version?.backend || '1.0.0';
+        if (elExtVer) elExtVer.textContent = '1.0.0';
+        if (elEnv) elEnv.textContent = d.environment || 'production';
+
+        const uptimeSec = d.uptimeSeconds || 0;
+        const hours = Math.floor(uptimeSec / 3600);
+        const minutes = Math.floor((uptimeSec % 3600) / 60);
+        const seconds = uptimeSec % 60;
+        if (elUptime) elUptime.textContent = `${hours}h ${minutes}m ${seconds}s (${uptimeSec}s)`;
+
+        if (elDbLatency) elDbLatency.textContent = `${d.database?.latencyMs ?? 0} ms`;
+        if (elAiModel) elAiModel.textContent = d.ai?.model || 'llama-3.1-8b-instant';
+        if (elAiToday) elAiToday.textContent = `${(d.ai?.requestsToday ?? 0).toLocaleString()} consultas`;
+        if (elAiMonth) elAiMonth.textContent = `${(d.ai?.requestsMonth ?? 0).toLocaleString()} consultas`;
+        if (elAiTokens) elAiTokens.textContent = `${(d.ai?.totalTokensMonth ?? 0).toLocaleString()} tokens`;
+
+        if (elAiCost) {
+          if (typeof d.ai?.estimatedCostUsd === 'number') {
+            elAiCost.textContent = `$${Number(d.ai.estimatedCostUsd).toFixed(6)} USD`;
+          } else {
+            elAiCost.textContent = String(d.ai?.estimatedCostUsd || '$0.000000 USD');
+          }
+        }
+
+        if (elMemHeap) {
+          elMemHeap.textContent = `${d.memory?.heapUsedMb ?? 0} MB / ${d.memory?.heapTotalMb ?? 0} MB`;
+        }
+        if (elMemRss) {
+          elMemRss.textContent = `${d.memory?.rssMb ?? 0} MB`;
+        }
+        if (elLastCheck) {
+          elLastCheck.textContent = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+        }
+      } else {
+        if (elBackendStatus) elBackendStatus.textContent = '🔴 No disponible';
+        if (elDbStatus) elDbStatus.textContent = '🔴 Sin conexión';
+        if (elAiStatus) elAiStatus.textContent = '🔴 Desconectado';
+        showAdminToast('No se pudo obtener el estado completo del sistema.', 'error');
       }
-      if (elAiMonth) {
-        elAiMonth.textContent = `${(d.ai?.requestsMonth || 0).toLocaleString()} consultas (${(d.ai?.totalTokensMonth || 0).toLocaleString()} tokens)`;
-      }
-      if (elAiCost) elAiCost.textContent = d.ai?.estimatedCostUsd || '$0.00';
-      if (elLastCheck) elLastCheck.textContent = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-    } else {
-      if (elBackendStatus) elBackendStatus.textContent = '🔴 No disponible';
-      if (elDbStatus) elDbStatus.textContent = '🔴 Sin conexión';
-      if (elAiStatus) elAiStatus.textContent = '🔴 Desconectado';
-      showAdminToast('No se pudo obtener el estado completo del sistema.', 'error');
+    } catch (error) {
+      console.error('[loadSystemHealth error]', error);
+      if (elBackendStatus) elBackendStatus.textContent = '🔴 Error';
+      if (elDbStatus) elDbStatus.textContent = '🔴 Error';
+      if (elAiStatus) elAiStatus.textContent = '🔴 Error';
+      showAdminToast('Error técnico al cargar estado del sistema.', 'error');
     }
   }
 

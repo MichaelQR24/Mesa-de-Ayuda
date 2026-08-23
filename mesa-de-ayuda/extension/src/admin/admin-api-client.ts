@@ -220,7 +220,17 @@ export const adminApiClient = {
   getCategories: () => adminFetch<Array<{ id: string; name: string }>>(`${API_CONFIG.BASE_URL}/api/v1/categories`),
 
   // Estado del Sistema / Monitoreo
-  getSystemHealth: () => adminFetch<SystemHealthData>(`${API_CONFIG.BASE_URL}/api/v1/admin/system/health`),
+  getSystemHealth: async (): Promise<{ success: boolean; data?: SystemHealthData; error?: { code?: string; message?: string } }> => {
+    const raw = (await adminFetch<any>(`${API_CONFIG.BASE_URL}/api/v1/admin/system/health`)) as Record<string, any>;
+    if (raw && (raw.success || raw.status)) {
+      const data: SystemHealthData = raw.version ? (raw as unknown as SystemHealthData) : (raw.data || raw);
+      return { success: true, data };
+    }
+    return {
+      success: false,
+      error: raw?.error || { message: 'Error al consultar estado del sistema' },
+    };
+  },
 };
 
 export interface SystemHealthData {
@@ -245,7 +255,7 @@ export interface SystemHealthData {
     requestsToday: number;
     requestsMonth: number;
     totalTokensMonth: number;
-    estimatedCostUsd: string;
+    estimatedCostUsd: number | string;
   };
   timestamp: string;
 }

@@ -33,3 +33,10 @@ desktop.ini
 .cache/
 .vite/
 *.tsbuildinfo
+
+# Database Backups & Dumps
+backups/
+**/backups/
+*.dump
+*.backup
+*.sql

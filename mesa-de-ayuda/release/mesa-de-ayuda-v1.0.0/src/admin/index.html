@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mesa de Ayuda - Panel de Administración</title>
-  <script type="module" crossorigin src="../../assets/admin-BC70fStr.js"></script>
+  <script type="module" crossorigin src="../../assets/admin-wDjUrrc7.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth-service-DVtUeJGY.js">
   <link rel="stylesheet" crossorigin href="../../assets/admin-kb7Jks3J.css">
 </head>
@@ -351,58 +351,53 @@
         </div>
       </section>
 
-      <!-- Vista 7: Estado del Sistema / Monitoreo -->
-      <section id="view-sistema" class="admin-view" style="display: none;">
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Estado y Salud del Sistema</h2>
-            <p class="view-subtitle">Monitoreo en tiempo real de Backend, PostgreSQL y Motor de IA</p>
-          </div>
-          <button type="button" id="btn-refresh-system-health" class="btn-primary">
-            <span>🔄 Actualizar Estado</span>
-          </button>
-        </div>
-
-        <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
-          <!-- Backend Status Card -->
-          <div class="kpi-card" id="card-backend-status">
-            <div class="kpi-icon" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">🖥️</div>
-            <div class="kpi-info">
-              <div class="kpi-label">Backend (Render)</div>
-              <div class="kpi-value" id="system-backend-status">🟢 Operativo</div>
-              <div class="kpi-subtext" id="system-backend-meta">v1.0.0 &bull; Uptime: --</div>
+      <!-- 7. VISTA ESTADO DEL SISTEMA -->
+      <section id="view-sistema" class="view-section">
+        <div class="kpi-grid">
+          <!-- Backend Card -->
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Backend API (Render)</span>
+              <span class="kpi-icon">🖥️</span>
             </div>
+            <div id="system-backend-status" class="kpi-value">🟢 Operativo</div>
+            <span id="system-backend-meta" class="kpi-subtext">v1.0.0 &bull; Uptime: --</span>
           </div>
 
-          <!-- DB Status Card -->
-          <div class="kpi-card" id="card-db-status">
-            <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">🗄️</div>
-            <div class="kpi-info">
-              <div class="kpi-label">Base de Datos (Supabase)</div>
-              <div class="kpi-value" id="system-db-status">🟢 Conectada</div>
-              <div class="kpi-subtext" id="system-db-meta">Latencia: -- ms</div>
+          <!-- DB Card -->
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Base de Datos (Supabase)</span>
+              <span class="kpi-icon">🗄️</span>
             </div>
+            <div id="system-db-status" class="kpi-value">🟢 Conectada</div>
+            <span id="system-db-meta" class="kpi-subtext">Latencia: -- ms</span>
           </div>
 
-          <!-- AI Status Card -->
-          <div class="kpi-card" id="card-ai-status">
-            <div class="kpi-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">⚡</div>
-            <div class="kpi-info">
-              <div class="kpi-label">Motor de IA (Groq Cloud)</div>
-              <div class="kpi-value" id="system-ai-status">🟢 Operativo</div>
-              <div class="kpi-subtext" id="system-ai-meta">Llama 3.1 8B</div>
+          <!-- AI Card -->
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Motor de IA (Groq Cloud)</span>
+              <span class="kpi-icon">⚡</span>
             </div>
+            <div id="system-ai-status" class="kpi-value">🟢 Operativo</div>
+            <span id="system-ai-meta" class="kpi-subtext">llama-3.1-8b-instant &bull; 0 hoy</span>
           </div>
         </div>
 
-        <div class="table-container" style="margin-top: 1.5rem;">
-          <div class="table-header">
-            <h3 class="table-title">Detalles Operativos y Recursos</h3>
+        <div class="table-card">
+          <div class="table-header-row">
+            <h2 class="table-title">Detalles Operativos y Recursos del Sistema</h2>
+            <button type="button" class="btn-action-sm" id="btn-refresh-system-health">Actualizar Estado</button>
           </div>
           <table class="data-table">
             <tbody>
               <tr>
-                <td style="font-weight: 600; width: 220px;">Versión del Backend</td>
+                <td style="font-weight: 600; width: 260px;">Estado General del Backend</td>
+                <td id="sys-backend-status-detail">🟢 Saludable (healthy)</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Versión del Backend</td>
                 <td id="sys-backend-version">1.0.0</td>
               </tr>
               <tr>
@@ -411,23 +406,43 @@
               </tr>
               <tr>
                 <td style="font-weight: 600;">Entorno de Ejecución</td>
-                <td id="sys-environment">Producción (Cloud)</td>
+                <td id="sys-environment">production</td>
               </tr>
               <tr>
                 <td style="font-weight: 600;">Tiempo de Actividad (Uptime)</td>
                 <td id="sys-uptime">--</td>
               </tr>
               <tr>
-                <td style="font-weight: 600;">Uso de Memoria (Heap / RSS)</td>
-                <td id="sys-memory">-- MB</td>
+                <td style="font-weight: 600;">Latencia PostgreSQL</td>
+                <td id="sys-db-latency">-- ms</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Modelo de IA Activo</td>
+                <td id="sys-ai-model">llama-3.1-8b-instant</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Consultas de IA Hoy</td>
+                <td id="sys-ai-today">0 consultas</td>
               </tr>
               <tr>
                 <td style="font-weight: 600;">Consultas de IA este Mes</td>
-                <td id="sys-ai-month">--</td>
+                <td id="sys-ai-month">0 consultas</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Tokens Consumidos este Mes</td>
+                <td id="sys-ai-tokens-month">0 tokens</td>
               </tr>
               <tr>
                 <td style="font-weight: 600;">Costo Estimado de IA (Mes)</td>
-                <td id="sys-ai-cost">--</td>
+                <td id="sys-ai-cost">$0.000000 USD</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Memoria en Uso (Heap Used / Total)</td>
+                <td id="sys-memory-heap">-- MB / -- MB</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600;">Memoria Residente (RSS)</td>
+                <td id="sys-memory-rss">-- MB</td>
               </tr>
               <tr>
                 <td style="font-weight: 600;">Última Comprobación</td>
