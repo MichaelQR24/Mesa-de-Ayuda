@@ -57,6 +57,7 @@ model User {
 
   aiHistories  AiHistory[]
   libraryItems LibraryItem[]
+  quickTexts   QuickText[]
   sessions     AuthSession[]
   auditLogs    AuditLog[]
 
@@ -153,4 +154,20 @@ model AuditLog {
   @@index([actorUserId])
   @@index([action])
   @@map("audit_logs")
+}
+
+model QuickText {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  header    String   @db.Text
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("quick_texts")
 }

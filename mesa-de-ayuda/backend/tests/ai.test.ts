@@ -141,8 +141,10 @@ describe('POST /api/v1/ai/process', () => {
     expect(response.body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('debe responder HTTP 502 con AI_PROVIDER_ERROR si ocurre un error en el proveedor', async () => {
-    vi.spyOn(groqService, 'generateCompletion').mockRejectedValueOnce(new Error('Groq network error'));
+  it('debe responder HTTP 502 con AI_MODEL_NOT_FOUND si el modelo no está disponible', async () => {
+    const error: any = new Error('The model `llama-3.1-8b-instant` does not exist or you do not have access to it.');
+    error.status = 404;
+    vi.spyOn(groqService, 'generateCompletion').mockRejectedValueOnce(error);
 
     const response = await request(app)
       .post('/api/v1/ai/process')
@@ -153,12 +155,40 @@ describe('POST /api/v1/ai/process', () => {
       });
 
     expect(response.status).toBe(502);
-    expect(response.body).toMatchObject({
-      success: false,
-      error: {
-        code: 'AI_PROVIDER_ERROR',
-        message: 'No fue posible procesar el texto con el servicio de IA en este momento.',
-      },
-    });
+    expect(response.body.error.code).toBe('AI_MODEL_NOT_FOUND');
+    expect(response.body.error.message).toContain('El modelo de IA configurado no está disponible');
+  });
+
+  it('debe responder HTTP 429 con AI_RATE_LIMIT_EXCEEDED si Groq devuelve 429', async () => {
+    const error: any = new Error('Rate limit exceeded');
+    error.status = 429;
+    vi.spyOn(groqService, 'generateCompletion').mockRejectedValueOnce(error);
+
+    const response = await request(app)
+      .post('/api/v1/ai/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        text: 'texto de prueba',
+        action: 'correct',
+      });
+
+    expect(response.status).toBe(429);
+    expect(response.body.error.code).toBe('AI_RATE_LIMIT_EXCEEDED');
+  });
+
+  it('debe responder HTTP 504 con AI_TIMEOUT si la llamada a Groq se agota por timeout', async () => {
+    const error: any = new Error('Connection timeout exceeded');
+    vi.spyOn(groqService, 'generateCompletion').mockRejectedValueOnce(error);
+
+    const response = await request(app)
+      .post('/api/v1/ai/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        text: 'texto de prueba',
+        action: 'correct',
+      });
+
+    expect(response.status).toBe(504);
+    expect(response.body.error.code).toBe('AI_TIMEOUT');
   });
 });

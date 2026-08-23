@@ -31,7 +31,7 @@ export class GroqService {
     options: GroqCompletionOptions = {}
   ): Promise<AiProcessResult> {
     const groq = this.getClient();
-    const model = env.GROQ_MODEL || 'llama-3.1-8b-instant';
+    const model = env.GROQ_MODEL || 'openai/gpt-oss-20b';
     const startTime = Date.now();
 
     const temperature = options.temperature ?? 0.1;

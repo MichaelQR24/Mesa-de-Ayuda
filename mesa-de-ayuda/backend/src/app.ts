@@ -19,6 +19,7 @@ import auditRoutes from './routes/audit.routes.js';
 import sessionAdminRoutes from './routes/session-admin.routes.js';
 import libraryAdminRoutes from './routes/library-admin.routes.js';
 import systemAdminRoutes from './routes/system-admin.routes.js';
+import { quickTextRoutes } from './routes/quick-text.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -129,6 +130,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/history', historyRoutes);
   app.use('/api/v1/library', libraryRoutes);
   app.use('/api/v1/categories', categoryRoutes);
+  app.use('/api/v1/quick-texts', quickTextRoutes);
 
   // 8. Manejo de 404 para rutas inexistentes
   app.use(notFoundHandler);

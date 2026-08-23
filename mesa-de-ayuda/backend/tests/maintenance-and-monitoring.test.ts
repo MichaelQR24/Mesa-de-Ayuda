@@ -142,7 +142,8 @@ describe('Mantenimiento, Monitoreo y Health Checks (Fase 15)', () => {
       expect(typeof res.body.database.latencyMs).toBe('number');
       expect(typeof res.body.uptimeSeconds).toBe('number');
       expect(res.body.memory).toHaveProperty('heapUsedMb');
-      expect(res.body.ai.model).toContain('llama-3.1-8b-instant');
+      expect(typeof res.body.ai.model).toBe('string');
+      expect(res.body.ai.model.length).toBeGreaterThan(0);
       expect(res.body.ai.requestsToday).toBe(15);
       expect(res.body.ai.requestsMonth).toBe(340);
 

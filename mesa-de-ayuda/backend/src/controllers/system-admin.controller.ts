@@ -58,7 +58,7 @@ export const getSystemHealth = async (_req: Request, res: Response, next: NextFu
       },
       ai: {
         status: 'operational',
-        model: env.GROQ_MODEL || 'llama-3.1-8b-instant',
+        model: env.GROQ_MODEL || 'openai/gpt-oss-20b',
         requestsToday: summary?.usage?.requestsToday ?? 0,
         requestsMonth: summary?.usage?.requestsMonth ?? 0,
         totalTokensMonth: summary?.usage?.totalTokensMonth ?? 0,

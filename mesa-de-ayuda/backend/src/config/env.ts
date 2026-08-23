@@ -9,7 +9,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default(''),
   ALLOWED_EXTENSION_IDS: z.string().default(''),
   GROQ_API_KEY: z.string().default(''),
-  GROQ_MODEL: z.string().default('llama-3.1-8b-instant'),
+  GROQ_MODEL: z.string().default('openai/gpt-oss-20b'),
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET debe tener al menos 32 caracteres').default('mesa_de_ayuda_access_secret_development_key_32chars_min'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener al menos 32 caracteres').default('mesa_de_ayuda_refresh_secret_development_key_32chars_min'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),

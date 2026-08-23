@@ -36,7 +36,7 @@ TAREA: PARAFRASEAR (${levelDesc}) en ${toneDesc}. No alteres datos ni hechos.`;
 
     case 'professionalize':
       return `${GLOBAL_RULES}
-TAREA: PROFESIONALIZAR. Transforma el reporte en un texto claro, sobrio y estructurado apto para ticket de soporte. No inventes diagnósticos ni resoluciones.`;
+TAREA: PROFESIONALIZAR en ${toneDesc}. Transforma el reporte en un texto claro, sobrio y estructurado apto para comunicación técnica de soporte. No inventes diagnósticos ni resoluciones.`;
 
     case 'summarize':
       return `${GLOBAL_RULES}

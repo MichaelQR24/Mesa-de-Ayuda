@@ -140,18 +140,52 @@ export class AiService {
       }
 
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStatus = (error as any)?.status || (error as any)?.statusCode;
 
-      if (errorMessage.includes('GROQ_API_KEY no está configurada')) {
+      if (errorMessage.includes('GROQ_API_KEY no está configurada') || (error as any).code === 'API_KEY_MISSING') {
         const err = new Error('La clave de API de Groq (GROQ_API_KEY) no está configurada en el servidor.');
         (err as any).code = 'API_KEY_MISSING';
         (err as any).statusCode = 500;
         throw err;
       }
 
-      if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT') || errorMessage.includes('aborted')) {
+      // Modelo no encontrado o deprecado (404 model_not_found)
+      if (errorStatus === 404 || errorMessage.includes('model_not_found') || errorMessage.includes('does not exist')) {
+        const err = new Error('El modelo de IA configurado no está disponible. Contacta al administrador.');
+        (err as any).code = 'AI_MODEL_NOT_FOUND';
+        (err as any).statusCode = 502;
+        throw err;
+      }
+
+      // Error de autenticación con el proveedor (401 invalid_api_key)
+      if (errorStatus === 401 || errorMessage.includes('invalid_api_key') || errorMessage.includes('Unauthorized')) {
+        const err = new Error('Error de autenticación con el proveedor de IA. Contacta al administrador.');
+        (err as any).code = 'AI_AUTHENTICATION_ERROR';
+        (err as any).statusCode = 502;
+        throw err;
+      }
+
+      // Rate limit del proveedor (429 rate_limit_exceeded)
+      if (errorStatus === 429 || errorMessage.includes('rate_limit_exceeded') || errorMessage.includes('Rate limit')) {
+        const err = new Error('El servicio de IA ha alcanzado temporalmente su límite de solicitudes. Intenta de nuevo en unos momentos.');
+        (err as any).code = 'AI_RATE_LIMIT_EXCEEDED';
+        (err as any).statusCode = 429;
+        throw err;
+      }
+
+      // Timeout con el proveedor (504 AI_TIMEOUT)
+      if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT') || errorMessage.includes('aborted') || errorStatus === 504) {
         const err = new Error('Tiempo de espera agotado al conectar con el proveedor de IA.');
         (err as any).code = 'AI_TIMEOUT';
         (err as any).statusCode = 504;
+        throw err;
+      }
+
+      // Error interno del proveedor (5xx)
+      if (typeof errorStatus === 'number' && errorStatus >= 500 && errorStatus < 600) {
+        const err = new Error('El proveedor de IA se encuentra temporalmente no disponible. Intenta más tarde.');
+        (err as any).code = 'AI_SERVICE_UNAVAILABLE';
+        (err as any).statusCode = 503;
         throw err;
       }
 
