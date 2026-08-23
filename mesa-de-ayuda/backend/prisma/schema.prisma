@@ -162,6 +162,7 @@ model QuickText {
   title     String
   header    String   @db.Text
   body      String   @db.Text
+  solution  String?  @default("") @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

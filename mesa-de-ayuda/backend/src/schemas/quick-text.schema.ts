@@ -16,6 +16,12 @@ export const createQuickTextSchema = z.object({
     .trim()
     .min(1, 'El cuerpo no puede estar vacío.')
     .max(5000, 'El cuerpo no puede exceder los 5000 caracteres.'),
+  solution: z
+    .string()
+    .trim()
+    .max(5000, 'La solución no puede exceder los 5000 caracteres.')
+    .optional()
+    .default(''),
 });
 
 export const updateQuickTextSchema = z
@@ -38,10 +44,22 @@ export const updateQuickTextSchema = z
       .min(1, 'El cuerpo no puede estar vacío.')
       .max(5000, 'El cuerpo no puede exceder los 5000 caracteres.')
       .optional(),
+    solution: z
+      .string()
+      .trim()
+      .max(5000, 'La solución no puede exceder los 5000 caracteres.')
+      .optional(),
   })
-  .refine((data) => data.title !== undefined || data.header !== undefined || data.body !== undefined, {
-    message: 'Debes proporcionar al menos un campo para actualizar (title, header o body).',
-  });
+  .refine(
+    (data) =>
+      data.title !== undefined ||
+      data.header !== undefined ||
+      data.body !== undefined ||
+      data.solution !== undefined,
+    {
+      message: 'Debes proporcionar al menos un campo para actualizar (title, header, body o solution).',
+    }
+  );
 
 export type CreateQuickTextInput = z.infer<typeof createQuickTextSchema>;
 export type UpdateQuickTextInput = z.infer<typeof updateQuickTextSchema>;

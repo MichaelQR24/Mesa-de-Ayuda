@@ -5,12 +5,14 @@ export interface CreateQuickTextData {
   title: string;
   header: string;
   body: string;
+  solution?: string | null;
 }
 
 export interface UpdateQuickTextData {
   title?: string;
   header?: string;
   body?: string;
+  solution?: string | null;
 }
 
 export class QuickTextRepository {
@@ -34,6 +36,7 @@ export class QuickTextRepository {
         title: data.title,
         header: data.header,
         body: data.body,
+        solution: data.solution ?? '',
       },
     });
   }

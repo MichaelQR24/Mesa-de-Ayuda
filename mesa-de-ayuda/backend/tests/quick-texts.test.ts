@@ -7,7 +7,7 @@ import { auditRepository } from '../src/repositories/audit.repository.js';
 import { generateAccessToken } from '../src/utils/jwt.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
-describe('Endpoints de Textos Rápidos (/api/v1/quick-texts)', () => {
+describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución', () => {
   const userAToken = generateAccessToken({
     sub: 'user-a',
     email: 'usera@empresa.com',
@@ -71,14 +71,15 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts)', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('debe devolver la lista de textos rápidos del usuario autenticado', async () => {
+    it('debe devolver la lista de textos rápidos incluyendo el campo solution', async () => {
       const mockItems = [
         {
           id: 'qt-1',
           userId: 'user-a',
           title: 'Desbloqueo de usuario de red',
           header: '[Usuario de red] Usuario solicita desbloqueo de Red',
-          body: 'Se atendió lo solicitado.',
+          body: 'El usuario reporta que su cuenta de red se encuentra bloqueada.',
+          solution: 'Se atendió lo solicitado.',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -94,15 +95,41 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts)', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveLength(1);
       expect(res.body.data[0].title).toBe('Desbloqueo de usuario de red');
+      expect(res.body.data[0].solution).toBe('Se atendió lo solicitado.');
+    });
+
+    it('debe tolerar registros antiguos donde solution sea null sin fallar', async () => {
+      const mockLegacyItems = [
+        {
+          id: 'qt-legacy',
+          userId: 'user-a',
+          title: 'Texto Antiguo',
+          header: 'Cabecera antigua',
+          body: 'Cuerpo antiguo',
+          solution: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      vi.spyOn(prisma.quickText, 'findMany').mockResolvedValueOnce(mockLegacyItems as any);
+
+      const res = await request(app)
+        .get('/api/v1/quick-texts')
+        .set('Authorization', `Bearer ${userAToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data[0].solution).toBeNull();
     });
   });
 
   describe('POST /api/v1/quick-texts', () => {
-    it('debe crear exitosamente un texto rápido válido', async () => {
+    it('debe crear exitosamente un texto rápido con cabecera, cuerpo y solución', async () => {
       const payload = {
         title: 'Desbloqueo de usuario de red',
         header: '[Usuario de red] Usuario solicita desbloqueo de Red',
-        body: 'Se atendió lo solicitado.',
+        body: 'El usuario reporta que su cuenta de red se encuentra bloqueada.',
+        solution: 'Se atendió lo solicitado.',
       };
 
       vi.spyOn(prisma.quickText, 'create').mockResolvedValueOnce({
@@ -122,9 +149,10 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts)', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.id).toBe('qt-new');
       expect(res.body.data.header).toBe(payload.header);
+      expect(res.body.data.solution).toBe(payload.solution);
     });
 
-    it('debe rechazar con HTTP 400 si faltan campos obligatorios', async () => {
+    it('debe rechazar con HTTP 400 si faltan campos obligatorios (título, cabecera o cuerpo)', async () => {
       const res = await request(app)
         .post('/api/v1/quick-texts')
         .set('Authorization', `Bearer ${userAToken}`)
@@ -139,31 +167,33 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts)', () => {
   });
 
   describe('PATCH /api/v1/quick-texts/:id', () => {
-    it('debe actualizar un texto rápido propio', async () => {
+    it('debe actualizar el campo solution de un texto rápido propio', async () => {
       vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
-        title: 'Título anterior',
-        header: 'Cabecera anterior',
-        body: 'Cuerpo anterior',
+        title: 'Desbloqueo',
+        header: 'Cabecera',
+        body: 'Cuerpo',
+        solution: 'Solución vieja',
       } as any);
 
       vi.spyOn(prisma.quickText, 'update').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
-        title: 'Título nuevo',
-        header: 'Cabecera anterior',
-        body: 'Cuerpo anterior',
+        title: 'Desbloqueo',
+        header: 'Cabecera',
+        body: 'Cuerpo',
+        solution: 'Solución actualizada y validada.',
       } as any);
 
       const res = await request(app)
         .patch('/api/v1/quick-texts/qt-1')
         .set('Authorization', `Bearer ${userAToken}`)
-        .send({ title: 'Título nuevo' });
+        .send({ solution: 'Solución actualizada y validada.' });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.title).toBe('Título nuevo');
+      expect(res.body.data.solution).toBe('Solución actualizada y validada.');
     });
 
     it('debe rechazar con HTTP 403 si USER B intenta editar un texto de USER A (Ownership)', async () => {
@@ -173,12 +203,13 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts)', () => {
         title: 'Texto de A',
         header: 'Cabecera',
         body: 'Cuerpo',
+        solution: 'Solución de A',
       } as any);
 
       const res = await request(app)
         .patch('/api/v1/quick-texts/qt-1')
         .set('Authorization', `Bearer ${userBToken}`)
-        .send({ title: 'Intento de hack' });
+        .send({ solution: 'Intento de hack' });
 
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
