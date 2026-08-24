@@ -7,7 +7,7 @@ import { auditRepository } from '../src/repositories/audit.repository.js';
 import { generateAccessToken } from '../src/utils/jwt.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
-describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución', () => {
+describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) - Privados y Compartidos', () => {
   const userAToken = generateAccessToken({
     sub: 'user-a',
     email: 'usera@empresa.com',
@@ -21,6 +21,14 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
     email: 'userb@empresa.com',
     displayName: 'Usuario B',
     role: UserRole.USER,
+    mustChangePassword: false,
+  });
+
+  const adminToken = generateAccessToken({
+    sub: 'admin-user',
+    email: 'admin@empresa.com',
+    displayName: 'Administrador',
+    role: UserRole.ADMIN,
     mustChangePassword: false,
   });
 
@@ -60,6 +68,22 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
           updatedAt: new Date(),
         };
       }
+      if (id === 'admin-user') {
+        return {
+          id: 'admin-user',
+          email: 'admin@empresa.com',
+          displayName: 'Administrador',
+          role: UserRole.ADMIN,
+          status: UserStatus.ACTIVE,
+          mustChangePassword: false,
+          monthlyTokenLimit: null,
+          saveAiHistory: true,
+          lastLoginAt: new Date(),
+          passwordChangedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
       return null;
     });
   });
@@ -71,17 +95,31 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
       expect(res.body.success).toBe(false);
     });
 
-    it('debe devolver la lista de textos rápidos incluyendo el campo solution', async () => {
+    it('debe devolver los textos propios y compartidos con flag isOwner y ownerDisplayName', async () => {
       const mockItems = [
         {
           id: 'qt-1',
           userId: 'user-a',
           title: 'Desbloqueo de usuario de red',
-          header: '[Usuario de red] Usuario solicita desbloqueo de Red',
-          body: 'El usuario reporta que su cuenta de red se encuentra bloqueada.',
+          header: '[Usuario de red] Usuario solicita desbloqueo',
+          body: 'El usuario reporta cuenta bloqueada.',
           solution: 'Se atendió lo solicitado.',
+          isShared: false,
           createdAt: new Date(),
           updatedAt: new Date(),
+          user: { id: 'user-a', displayName: 'Usuario A' },
+        },
+        {
+          id: 'qt-2',
+          userId: 'user-b',
+          title: 'Configuración de VPN',
+          header: '[VPN] Configuración remota',
+          body: 'Instalación de certificados.',
+          solution: 'Túnel VPN configurado.',
+          isShared: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: { id: 'user-b', displayName: 'Usuario B' },
         },
       ];
 
@@ -93,9 +131,12 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveLength(1);
-      expect(res.body.data[0].title).toBe('Desbloqueo de usuario de red');
-      expect(res.body.data[0].solution).toBe('Se atendió lo solicitado.');
+      expect(res.body.data).toHaveLength(2);
+      expect(res.body.data[0].isOwner).toBe(true);
+      expect(res.body.data[0].isShared).toBe(false);
+      expect(res.body.data[1].isOwner).toBe(false);
+      expect(res.body.data[1].isShared).toBe(true);
+      expect(res.body.data[1].ownerDisplayName).toBe('Usuario B');
     });
 
     it('debe tolerar registros antiguos donde solution sea null sin fallar', async () => {
@@ -107,8 +148,10 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
           header: 'Cabecera antigua',
           body: 'Cuerpo antiguo',
           solution: null,
+          isShared: false,
           createdAt: new Date(),
           updatedAt: new Date(),
+          user: { id: 'user-a', displayName: 'Usuario A' },
         },
       ];
 
@@ -119,25 +162,27 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
         .set('Authorization', `Bearer ${userAToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data[0].solution).toBeNull();
+      expect(res.body.data[0].solution).toBe('');
     });
   });
 
   describe('POST /api/v1/quick-texts', () => {
-    it('debe crear exitosamente un texto rápido con cabecera, cuerpo y solución', async () => {
+    it('debe crear exitosamente un texto rápido compartido con el equipo', async () => {
       const payload = {
-        title: 'Desbloqueo de usuario de red',
-        header: '[Usuario de red] Usuario solicita desbloqueo de Red',
-        body: 'El usuario reporta que su cuenta de red se encuentra bloqueada.',
+        title: 'Resetear contraseña',
+        header: '[Restablecimiento de Red]',
+        body: 'Usuario solicita restablecimiento de red',
         solution: 'Se atendió lo solicitado.',
+        isShared: true,
       };
 
       vi.spyOn(prisma.quickText, 'create').mockResolvedValueOnce({
-        id: 'qt-new',
+        id: 'qt-shared',
         userId: 'user-a',
         ...payload,
         createdAt: new Date(),
         updatedAt: new Date(),
+        user: { id: 'user-a', displayName: 'Usuario A' },
       } as any);
 
       const res = await request(app)
@@ -147,9 +192,9 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.id).toBe('qt-new');
-      expect(res.body.data.header).toBe(payload.header);
-      expect(res.body.data.solution).toBe(payload.solution);
+      expect(res.body.data.id).toBe('qt-shared');
+      expect(res.body.data.isShared).toBe(true);
+      expect(res.body.data.isOwner).toBe(true);
     });
 
     it('debe rechazar con HTTP 400 si faltan campos obligatorios (título, cabecera o cuerpo)', async () => {
@@ -167,49 +212,91 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
   });
 
   describe('PATCH /api/v1/quick-texts/:id', () => {
-    it('debe actualizar el campo solution de un texto rápido propio', async () => {
+    it('debe permitir al propietario cambiar el estado de isShared de true a false', async () => {
       vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
-        title: 'Desbloqueo',
+        title: 'Texto compartido',
         header: 'Cabecera',
         body: 'Cuerpo',
-        solution: 'Solución vieja',
+        solution: 'Solución',
+        isShared: true,
       } as any);
 
       vi.spyOn(prisma.quickText, 'update').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
-        title: 'Desbloqueo',
+        title: 'Texto compartido',
         header: 'Cabecera',
         body: 'Cuerpo',
-        solution: 'Solución actualizada y validada.',
+        solution: 'Solución',
+        isShared: false,
+        user: { id: 'user-a', displayName: 'Usuario A' },
       } as any);
 
       const res = await request(app)
         .patch('/api/v1/quick-texts/qt-1')
         .set('Authorization', `Bearer ${userAToken}`)
-        .send({ solution: 'Solución actualizada y validada.' });
+        .send({ isShared: false });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.solution).toBe('Solución actualizada y validada.');
+      expect(res.body.data.isShared).toBe(false);
     });
 
-    it('debe rechazar con HTTP 403 si USER B intenta editar un texto de USER A (Ownership)', async () => {
+    it('debe permitir al propietario actualizar título, cabecera, cuerpo y solución', async () => {
       vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
-        title: 'Texto de A',
+        title: 'Título anterior',
+        header: 'Cabecera anterior',
+        body: 'Cuerpo anterior',
+        solution: 'Solución anterior',
+        isShared: false,
+      } as any);
+
+      vi.spyOn(prisma.quickText, 'update').mockResolvedValueOnce({
+        id: 'qt-1',
+        userId: 'user-a',
+        title: 'Título nuevo',
+        header: 'Cabecera nueva',
+        body: 'Cuerpo nuevo',
+        solution: 'Solución nueva',
+        isShared: false,
+        user: { id: 'user-a', displayName: 'Usuario A' },
+      } as any);
+
+      const res = await request(app)
+        .patch('/api/v1/quick-texts/qt-1')
+        .set('Authorization', `Bearer ${userAToken}`)
+        .send({
+          title: 'Título nuevo',
+          header: 'Cabecera nueva',
+          body: 'Cuerpo nuevo',
+          solution: 'Solución nueva',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.title).toBe('Título nuevo');
+      expect(res.body.data.solution).toBe('Solución nueva');
+    });
+
+    it('debe rechazar con HTTP 403 si USER B intenta editar un texto compartido creado por USER A', async () => {
+      vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
+        id: 'qt-1',
+        userId: 'user-a',
+        title: 'Texto de A compartido',
         header: 'Cabecera',
         body: 'Cuerpo',
-        solution: 'Solución de A',
+        solution: 'Solución',
+        isShared: true,
       } as any);
 
       const res = await request(app)
         .patch('/api/v1/quick-texts/qt-1')
         .set('Authorization', `Bearer ${userBToken}`)
-        .send({ solution: 'Intento de hack' });
+        .send({ title: 'Intento de modificar texto de otro usuario' });
 
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
@@ -218,7 +305,7 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
   });
 
   describe('DELETE /api/v1/quick-texts/:id', () => {
-    it('debe eliminar un texto propio exitosamente', async () => {
+    it('debe permitir al propietario eliminar su propio texto exitosamente', async () => {
       vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
@@ -235,13 +322,34 @@ describe('Endpoints de Textos Rápidos (/api/v1/quick-texts) con campo Solución
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
+      expect(res.body.data.message).toBe('Texto rápido eliminado correctamente.');
     });
 
-    it('debe rechazar con HTTP 403 si USER B intenta eliminar un texto de USER A', async () => {
+    it('debe permitir a un ADMIN eliminar un texto de otro usuario si fuera necesario moderar', async () => {
       vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
         id: 'qt-1',
         userId: 'user-a',
-        title: 'Texto protegido de A',
+        title: 'Texto moderable',
+      } as any);
+
+      vi.spyOn(prisma.quickText, 'delete').mockResolvedValueOnce({
+        id: 'qt-1',
+      } as any);
+
+      const res = await request(app)
+        .delete('/api/v1/quick-texts/qt-1')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('debe rechazar con HTTP 403 si USER B intenta eliminar un texto compartido de USER A', async () => {
+      vi.spyOn(prisma.quickText, 'findUnique').mockResolvedValueOnce({
+        id: 'qt-1',
+        userId: 'user-a',
+        title: 'Texto de A',
+        isShared: true,
       } as any);
 
       const res = await request(app)

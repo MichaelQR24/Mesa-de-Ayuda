@@ -22,6 +22,10 @@ export const createQuickTextSchema = z.object({
     .max(5000, 'La solución no puede exceder los 5000 caracteres.')
     .optional()
     .default(''),
+  isShared: z
+    .boolean()
+    .optional()
+    .default(false),
 });
 
 export const updateQuickTextSchema = z
@@ -49,15 +53,19 @@ export const updateQuickTextSchema = z
       .trim()
       .max(5000, 'La solución no puede exceder los 5000 caracteres.')
       .optional(),
+    isShared: z
+      .boolean()
+      .optional(),
   })
   .refine(
     (data) =>
       data.title !== undefined ||
       data.header !== undefined ||
       data.body !== undefined ||
-      data.solution !== undefined,
+      data.solution !== undefined ||
+      data.isShared !== undefined,
     {
-      message: 'Debes proporcionar al menos un campo para actualizar (title, header, body o solution).',
+      message: 'Debes proporcionar al menos un campo para actualizar (title, header, body, solution o isShared).',
     }
   );
 

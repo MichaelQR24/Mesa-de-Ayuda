@@ -8,7 +8,7 @@ import { navigationManager } from './components/navigation';
 import { loginView } from './components/login-view';
 import { changePasswordView } from './components/change-password-view';
 import { assistantView } from './components/assistant-view';
-import { libraryView } from './components/library-view';
+import { quickTextsView } from './components/quick-texts-view';
 import { historyView } from './components/history-view';
 import { savedView } from './components/saved-view';
 import { settingsView } from './components/settings-view';
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Inicializar componentes de vistas
     await settingsView.init();
     await assistantView.init();
-    await libraryView.init();
+    quickTextsView.init();
     await historyView.init();
     await savedView.init();
 
@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         case 'asistente':
           assistantView.applyStoredSettings().catch(console.error);
           break;
-        case 'biblioteca':
-          libraryView.refresh().catch(console.error);
+        case 'textos-rapidos':
+          quickTextsView.refresh().catch(console.error);
           break;
         case 'historial':
           historyView.refresh().catch(console.error);
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       navigationManager.showAuthenticatedApp();
     }
 
-    console.log('[Mesa de Ayuda] Frontend del Side Panel inicializado correctamente (Fase 6).');
+    console.log('[Mesa de Ayuda] Frontend del Side Panel inicializado correctamente.');
   } catch (error) {
     console.error('[Mesa de Ayuda] Error inicializando el Side Panel:', error);
   }

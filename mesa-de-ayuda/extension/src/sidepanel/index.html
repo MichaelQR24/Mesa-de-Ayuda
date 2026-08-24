@@ -28,24 +28,28 @@
         </div>
       </header>
 
-      <!-- Barra de Navegación (visible solo con sesión activa) -->
-      <nav id="main-nav-bar" class="nav-bar hidden" role="tablist" aria-label="Navegación principal">
-        <button type="button" class="nav-tab-btn active" data-tab="asistente" role="tab" aria-selected="true">
-          <span class="nav-tab-text">Asistente</span>
-        </button>
-        <button type="button" class="nav-tab-btn" data-tab="biblioteca" role="tab" aria-selected="false">
-          <span class="nav-tab-text">Biblioteca</span>
-        </button>
-        <button type="button" class="nav-tab-btn" data-tab="historial" role="tab" aria-selected="false">
-          <span class="nav-tab-text">Historial</span>
-        </button>
-        <button type="button" class="nav-tab-btn" data-tab="guardados" role="tab" aria-selected="false">
-          <span class="nav-tab-text">Guardados</span>
-        </button>
-        <button type="button" class="nav-tab-btn" data-tab="configuracion" role="tab" aria-selected="false">
-          <span class="nav-tab-text">Configuración</span>
-        </button>
-      </nav>
+      <!-- Barra de Navegación con Desplazamiento Horizontal (visible solo con sesión activa) -->
+      <div id="nav-container-wrapper" class="nav-container-wrapper hidden">
+        <button type="button" id="btn-nav-prev" class="nav-arrow-btn" aria-label="Desplazar pestañas a la izquierda">◀</button>
+        <nav id="main-nav-bar" class="nav-bar" role="tablist" aria-label="Navegación principal">
+          <button type="button" class="nav-tab-btn active" data-tab="asistente" role="tab" aria-selected="true">
+            <span class="nav-tab-text">✨ Asistente</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="textos-rapidos" role="tab" aria-selected="false">
+            <span class="nav-tab-text">📋 Textos rápidos</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="historial" role="tab" aria-selected="false">
+            <span class="nav-tab-text">🕘 Historial</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="guardados" role="tab" aria-selected="false">
+            <span class="nav-tab-text">⭐ Guardados</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="configuracion" role="tab" aria-selected="false">
+            <span class="nav-tab-text">⚙️ Configuración</span>
+          </button>
+        </nav>
+        <button type="button" id="btn-nav-next" class="nav-arrow-btn" aria-label="Desplazar pestañas a la derecha">▶</button>
+      </div>
 
       <!-- Contenedor Principal de Vistas -->
       <main class="main-content">
@@ -168,45 +172,67 @@
               rows="4"
             ></textarea>
 
-            <!-- Opciones Adicionales -->
-            <div class="options-grid">
-              <div class="option-field">
-                <label for="select-tone" class="field-sublabel">Tono de respuesta:</label>
+            <!-- Pregunta Guiada & Selector de Acción -->
+            <div class="guided-action-section">
+              <label class="field-sublabel guided-title">¿Qué quieres hacer con el texto?</label>
+              <div class="actions-button-grid">
+                <button type="button" class="action-btn btn-action-pill active" data-action="corregir" title="Corregir ortografía y gramática">
+                  <span class="action-icon">✏️</span>
+                  <span class="btn-text">Corregir</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="parafrasear" title="Reescribir con otro nivel de cambio">
+                  <span class="action-icon">🔄</span>
+                  <span class="btn-text">Parafrasear</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="profesionalizar" title="Transformar a lenguaje formal y técnico">
+                  <span class="action-icon">💼</span>
+                  <span class="btn-text">Profesionalizar</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="resumir" title="Reducir manteniendo lo esencial">
+                  <span class="action-icon">📝</span>
+                  <span class="btn-text">Resumir</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="responder" title="Generar respuesta adecuada al usuario">
+                  <span class="action-icon">💬</span>
+                  <span class="btn-text">Responder</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel de Divulgación Progresiva (Configuración Contextual) -->
+            <div id="progressive-options-panel" class="progressive-options-panel">
+              <!-- Descripción Informativa Dinámica -->
+              <div id="action-info-box" class="action-info-box">
+                <p id="action-info-text" class="action-info-text">Corrige ortografía, gramática y puntuación sin cambiar el significado.</p>
+              </div>
+
+              <!-- Selector Dinámico de Nivel de Cambio (Solo Parafrasear) -->
+              <div id="group-paraphrase-level" class="option-field hidden">
+                <label for="select-paraphrase-level" class="field-sublabel">Nivel de cambio:</label>
+                <select id="select-paraphrase-level" class="app-select">
+                  <option value="suave">Ligero</option>
+                  <option value="medio" selected>Moderado</option>
+                  <option value="completo">Alto</option>
+                </select>
+                <span id="paraphrase-hint-text" class="option-hint-text">Reescribe el texto manteniendo claramente su significado.</span>
+              </div>
+
+              <!-- Selector Dinámico de Estilo / Tono (Profesionalizar / Responder) -->
+              <div id="group-tone" class="option-field hidden">
+                <label id="label-tone" for="select-tone" class="field-sublabel">Estilo de redacción:</label>
                 <select id="select-tone" class="app-select">
-                  <option value="profesional">Profesional</option>
+                  <option value="profesional" selected>Profesional</option>
                   <option value="formal">Formal</option>
                   <option value="amable">Amable</option>
                   <option value="tecnico">Técnico</option>
                   <option value="casual">Casual</option>
                 </select>
+                <span id="tone-hint-text" class="option-hint-text">Tono sobrio y corporativo estándar para soporte técnico.</span>
               </div>
 
-              <div id="group-paraphrase-level" class="option-field">
-                <label for="select-paraphrase-level" class="field-sublabel">Nivel de parafraseo:</label>
-                <select id="select-paraphrase-level" class="app-select">
-                  <option value="suave">Suave</option>
-                  <option value="medio" selected>Medio</option>
-                  <option value="completo">Completo</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Acciones Principales -->
-            <div class="actions-button-grid">
-              <button type="button" class="action-btn btn-action-primary" data-action="corregir">
-                <span class="btn-text">Corregir</span>
-              </button>
-              <button type="button" class="action-btn btn-action-purple" data-action="parafrasear">
-                <span class="btn-text">Parafrasear</span>
-              </button>
-              <button type="button" class="action-btn btn-action-purple" data-action="profesionalizar">
-                <span class="btn-text">Profesionalizar</span>
-              </button>
-              <button type="button" class="action-btn btn-action-secondary" data-action="resumir">
-                <span class="btn-text">Resumir</span>
-              </button>
-              <button type="button" class="action-btn btn-action-secondary" data-action="responder">
-                <span class="btn-text">Responder</span>
+              <!-- Botón Principal de Ejecución -->
+              <button type="button" id="btn-process-ai" class="btn-primary-action btn-full btn-process-main">
+                <span class="btn-text">⚡ Procesar con IA</span>
               </button>
             </div>
           </div>
@@ -253,24 +279,46 @@
           </div>
         </section>
 
-        <!-- 2. VISTA BIBLIOTECA -->
-        <section id="view-biblioteca" class="view-panel">
-          <div class="panel-intro-header">
-            <h2 class="view-heading">Biblioteca de Plantillas</h2>
-            <p class="view-subheading">Respuestas predeterminadas para atención y soporte técnico.</p>
+        <!-- 1.5. VISTA TEXTOS RÁPIDOS -->
+        <section id="view-textos-rapidos" class="view-panel">
+          <div class="panel-intro-header panel-header-flex">
+            <div>
+              <h2 class="view-heading">Textos Rápidos</h2>
+              <p class="view-subheading">Guarda respuestas y textos que utilizas frecuentemente en tus tickets.</p>
+            </div>
+            <button type="button" id="btn-new-quick-text" class="btn-primary-action btn-sm">
+              <span>+ Nuevo texto</span>
+            </button>
           </div>
 
           <div class="search-box-wrapper">
             <input
               type="search"
-              id="library-search"
+              id="quick-texts-search"
               class="app-input-search"
-              placeholder="Buscar por categoría, título o contenido..."
+              placeholder="Buscar por título, cabecera, cuerpo o solución..."
             />
           </div>
 
-          <div id="library-categories" class="categories-chips-container"></div>
-          <div id="library-items-list" class="cards-list-container"></div>
+          <!-- Filtros de Textos Rápidos -->
+          <div id="quick-texts-filters" class="categories-chips-container quick-texts-filter-chips">
+            <button type="button" class="chip-btn chip-active" data-filter="all">Todos</button>
+            <button type="button" class="chip-btn" data-filter="mine">Mis textos</button>
+            <button type="button" class="chip-btn" data-filter="shared">Compartidos</button>
+          </div>
+
+          <!-- Estado Vacío -->
+          <div id="quick-texts-empty" class="empty-state-box hidden">
+            <div class="empty-state-icon">📋</div>
+            <h3 class="empty-state-title">No hay textos rápidos que mostrar.</h3>
+            <p class="empty-state-desc">Crea textos con cabecera, cuerpo y solución listos para copiar en un solo clic.</p>
+            <button type="button" id="btn-create-first-quick-text" class="btn-outline btn-sm">
+              <span>+ Crear primer texto</span>
+            </button>
+          </div>
+
+          <!-- Listado de Tarjetas -->
+          <div id="quick-texts-list" class="quick-texts-list-container"></div>
         </section>
 
         <!-- 3. VISTA HISTORIAL -->
@@ -375,6 +423,107 @@
       <footer class="app-footer">
         <span>Mesa de Ayuda v1.0.0 &bull; Fase 6 (Autenticación y Roles)</span>
       </footer>
+    </div>
+
+    <!-- Modal Crear/Editar Texto Rápido -->
+    <div id="modal-quick-text" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-quick-text-title" class="modal-title">Nuevo Texto Rápido</h3>
+          <button type="button" id="btn-close-quick-text-modal" class="btn-modal-close" title="Cerrar modal">&times;</button>
+        </div>
+        <form id="form-quick-text" class="modal-form" novalidate>
+          <div class="option-field">
+            <label for="quick-text-title" class="field-label">Título descriptivo</label>
+            <input
+              type="text"
+              id="quick-text-title"
+              class="app-input"
+              placeholder="Ej. Desbloqueo de usuario de red"
+              maxlength="150"
+              required
+            />
+          </div>
+
+          <div class="option-field">
+            <label for="quick-text-header" class="field-label">Cabecera</label>
+            <textarea
+              id="quick-text-header"
+              class="app-textarea modal-textarea-sm"
+              placeholder="Ej. [Usuario de red] Usuario solicita desbloqueo de Red"
+              maxlength="1000"
+              rows="2"
+              required
+            ></textarea>
+            <span class="option-hint-text">Texto breve de encabezado o tipificación.</span>
+          </div>
+
+          <div class="option-field">
+            <label for="quick-text-body" class="field-label">Cuerpo</label>
+            <textarea
+              id="quick-text-body"
+              class="app-textarea modal-textarea-md"
+              placeholder="Ej. El usuario reporta que su cuenta de red se encuentra bloqueada."
+              maxlength="5000"
+              rows="3"
+              required
+            ></textarea>
+            <span class="option-hint-text">Detalle completo de la solicitud o incidencia.</span>
+          </div>
+
+          <div class="option-field">
+            <label for="quick-text-solution" class="field-label">Solución</label>
+            <textarea
+              id="quick-text-solution"
+              class="app-textarea modal-textarea-sm"
+              placeholder="Ej. Se atendió lo solicitado."
+              maxlength="5000"
+              rows="2"
+            ></textarea>
+            <span class="option-hint-text">Respuesta final, acción realizada o resolución.</span>
+          </div>
+
+          <div class="option-field option-field-checkbox">
+            <label class="checkbox-container">
+              <input type="checkbox" id="quick-text-is-shared" />
+              <span class="checkbox-label-text">👥 Compartir con el equipo</span>
+            </label>
+            <span class="option-hint-text">Permite que todos los miembros del equipo puedan ver y copiar este texto.</span>
+          </div>
+
+          <div class="modal-actions-row">
+            <button type="button" id="btn-cancel-quick-text" class="btn-outline">
+              Cancelar
+            </button>
+            <button type="submit" id="btn-submit-quick-text" class="btn-primary-action">
+              Guardar texto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Confirmación de Eliminación -->
+    <div id="modal-delete-quick-text" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+          <h3 class="modal-title">¿Eliminar este texto rápido?</h3>
+          <button type="button" id="btn-close-delete-quick-text-modal" class="btn-modal-close" title="Cerrar modal">&times;</button>
+        </div>
+        <div class="modal-body-content">
+          <p class="modal-warning-text">
+            Se eliminará permanentemente <strong id="delete-quick-text-name">este texto rápido</strong>. Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="modal-actions-row">
+          <button type="button" id="btn-cancel-delete-quick-text" class="btn-outline">
+            Cancelar
+          </button>
+          <button type="button" id="btn-confirm-delete-quick-text" class="btn-danger-link btn-danger-solid">
+            Eliminar
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Contenedor dinámico de notificaciones -->

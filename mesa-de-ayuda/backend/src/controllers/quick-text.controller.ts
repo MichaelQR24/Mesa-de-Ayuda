@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { quickTextService } from '../services/quick-text.service.js';
 import { createQuickTextSchema, updateQuickTextSchema } from '../schemas/quick-text.schema.js';
+import { UserRole } from '@prisma/client';
 
 export class QuickTextController {
   async getQuickTexts(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const items = await quickTextService.getQuickTextsByUser(userId);
+      const items = await quickTextService.getQuickTexts(userId);
 
       res.status(200).json({
         success: true,
@@ -63,6 +64,7 @@ export class QuickTextController {
   async updateQuickText(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
+      const userRole = (req.user!.role as UserRole) || UserRole.USER;
       const id = String(req.params.id);
 
       const parsed = updateQuickTextSchema.safeParse(req.body);
@@ -78,7 +80,7 @@ export class QuickTextController {
         return;
       }
 
-      const updated = await quickTextService.updateQuickText(id, userId, parsed.data);
+      const updated = await quickTextService.updateQuickText(id, userId, userRole, parsed.data);
 
       res.status(200).json({
         success: true,
@@ -98,9 +100,10 @@ export class QuickTextController {
   async deleteQuickText(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
+      const userRole = (req.user!.role as UserRole) || UserRole.USER;
       const id = String(req.params.id);
 
-      const result = await quickTextService.deleteQuickText(id, userId);
+      const result = await quickTextService.deleteQuickText(id, userId, userRole);
 
       res.status(200).json({
         success: true,

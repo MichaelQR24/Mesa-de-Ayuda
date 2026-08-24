@@ -4,7 +4,21 @@ export type ParaphraseLevel = 'suave' | 'medio' | 'completo';
 
 export type ActionType = 'corregir' | 'parafrasear' | 'profesionalizar' | 'resumir' | 'responder';
 
-export type NavTab = 'asistente' | 'biblioteca' | 'historial' | 'guardados' | 'configuracion';
+export type NavTab = 'asistente' | 'textos-rapidos' | 'historial' | 'guardados' | 'configuracion';
+
+export interface QuickTextItem {
+  id: string;
+  userId?: string;
+  title: string;
+  header: string;
+  body: string;
+  solution?: string | null;
+  isShared: boolean;
+  isOwner?: boolean;
+  ownerDisplayName?: string;
+  createdAt?: string | number;
+  updatedAt?: string | number;
+}
 
 export type ThemeOption = 'system' | 'light' | 'dark';
 

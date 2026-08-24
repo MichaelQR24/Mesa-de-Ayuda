@@ -28,11 +28,40 @@ const LEVEL_MAP: Record<ParaphraseLevel, 'soft' | 'medium' | 'complete'> = {
   completo: 'complete',
 };
 
+const ACTION_INFO_TEXTS: Record<ActionType, string> = {
+  corregir: 'Corrige ortografía, gramática y puntuación sin cambiar el significado.',
+  parafrasear: 'Reescribe el texto con un nivel de cambio ajustable manteniendo la idea original.',
+  profesionalizar: 'Transforma el reporte en un texto formal y técnico adecuado para soporte.',
+  resumir: 'Reduce el texto conservando la información más importante.',
+  responder: 'Genera una respuesta adecuada al mensaje recibido.',
+};
+
+const TONE_HINT_TEXTS: Record<ToneOption, string> = {
+  profesional: 'Tono sobrio y corporativo estándar para soporte técnico.',
+  formal: 'Lenguaje altamente respetuoso y protocolar.',
+  amable: 'Cálido y empático, ideal para calmar usuarios o atención personalizada.',
+  tecnico: 'Usa lenguaje preciso y apropiado para soporte TI.',
+  casual: 'Cercano y directo para comunicación interna.',
+};
+
+const PARAPHRASE_HINT_TEXTS: Record<ParaphraseLevel, string> = {
+  suave: 'Conserva gran parte de la redacción original con ajustes leves.',
+  medio: 'Reescribe el texto manteniendo claramente su significado.',
+  completo: 'Cambia ampliamente la forma de expresarlo sin alterar la idea.',
+};
+
 export class AssistantView {
   private inputTextarea!: HTMLTextAreaElement;
   private charCounter!: HTMLElement;
   private toneSelect!: HTMLSelectElement;
+  private labelTone!: HTMLElement;
+  private groupTone!: HTMLElement;
+  private toneHintText!: HTMLElement;
   private paraphraseLevelSelect!: HTMLSelectElement;
+  private groupParaphraseLevel!: HTMLElement;
+  private paraphraseHintText!: HTMLElement;
+  private actionInfoText!: HTMLElement;
+  private btnProcessAi!: HTMLButtonElement;
   private resultSection!: HTMLElement;
   private resultTextarea!: HTMLTextAreaElement;
   private loadingIndicator!: HTMLElement;
@@ -41,7 +70,8 @@ export class AssistantView {
   private btnReplaceSelection!: HTMLButtonElement;
   private sourceIndicator!: HTMLElement;
 
-  private lastAction: ActionType | null = null;
+  private selectedAction: ActionType = 'corregir';
+  private lastExecutedAction: ActionType | null = null;
   private isProcessing = false;
   private maxChars = 5000;
   private currentSelectionContext: SelectedTextContext | null = null;
@@ -50,7 +80,14 @@ export class AssistantView {
     this.inputTextarea = document.getElementById('input-text') as HTMLTextAreaElement;
     this.charCounter = document.getElementById('char-count') as HTMLElement;
     this.toneSelect = document.getElementById('select-tone') as HTMLSelectElement;
+    this.labelTone = document.getElementById('label-tone') as HTMLElement;
+    this.groupTone = document.getElementById('group-tone') as HTMLElement;
+    this.toneHintText = document.getElementById('tone-hint-text') as HTMLElement;
     this.paraphraseLevelSelect = document.getElementById('select-paraphrase-level') as HTMLSelectElement;
+    this.groupParaphraseLevel = document.getElementById('group-paraphrase-level') as HTMLElement;
+    this.paraphraseHintText = document.getElementById('paraphrase-hint-text') as HTMLElement;
+    this.actionInfoText = document.getElementById('action-info-text') as HTMLElement;
+    this.btnProcessAi = document.getElementById('btn-process-ai') as HTMLButtonElement;
     this.resultSection = document.getElementById('result-section') as HTMLElement;
     this.resultTextarea = document.getElementById('result-text') as HTMLTextAreaElement;
     this.loadingIndicator = document.getElementById('loading-indicator') as HTMLElement;
@@ -65,6 +102,7 @@ export class AssistantView {
     // Event listeners
     this.setupEventListeners();
     this.updateCharCount();
+    this.updateProgressiveDisclosureUI();
 
     // Comprobar si hay una selección pendiente enviada desde Context Menu
     await this.checkPendingSelection();
@@ -87,6 +125,7 @@ export class AssistantView {
     if (this.paraphraseLevelSelect) {
       this.paraphraseLevelSelect.value = settings.defaultParaphraseLevel;
     }
+    this.updateOptionHints();
   }
 
   setText(text: string): void {
@@ -114,10 +153,7 @@ export class AssistantView {
   }
 
   loadSelectionContext(context: SelectedTextContext): void {
-    // 1. Asegurar navegación a la pestaña Asistente
     navigationManager.switchTab('asistente');
-
-    // 2. Cargar texto en textarea y actualizar estado
     this.currentSelectionContext = context;
     this.setText(context.text);
 
@@ -125,49 +161,108 @@ export class AssistantView {
       this.sourceIndicator.classList.remove('hidden');
     }
 
-    // 3. Resaltar o enfocar acción sugerida si existe
     if (context.suggestedAction) {
-      this.highlightAction(context.suggestedAction);
+      this.selectAction(context.suggestedAction);
       showToast('Texto cargado desde la página', 'info');
     } else {
       showToast('Texto enviado al asistente', 'info');
     }
   }
 
-  private highlightAction(action: ActionType): void {
+  selectAction(action: ActionType): void {
+    this.selectedAction = action;
+
     this.actionButtons.forEach((btn) => {
       const isTarget = btn.dataset.action === action;
-      if (isTarget) {
-        btn.focus();
-      }
+      btn.classList.toggle('active', isTarget);
     });
+
+    this.updateProgressiveDisclosureUI();
+  }
+
+  private updateProgressiveDisclosureUI(): void {
+    const action = this.selectedAction;
+
+    // 1. Texto descriptivo didáctico
+    if (this.actionInfoText) {
+      this.actionInfoText.textContent = ACTION_INFO_TEXTS[action] || '';
+    }
+
+    // 2. Divulgación Progresiva de controles
+    switch (action) {
+      case 'corregir':
+      case 'resumir':
+        this.groupParaphraseLevel?.classList.add('hidden');
+        this.groupTone?.classList.add('hidden');
+        break;
+
+      case 'parafrasear':
+        this.groupParaphraseLevel?.classList.remove('hidden');
+        this.groupTone?.classList.add('hidden');
+        break;
+
+      case 'profesionalizar':
+        this.groupParaphraseLevel?.classList.add('hidden');
+        this.groupTone?.classList.remove('hidden');
+        if (this.labelTone) {
+          this.labelTone.textContent = 'Estilo de redacción:';
+        }
+        break;
+
+      case 'responder':
+        this.groupParaphraseLevel?.classList.add('hidden');
+        this.groupTone?.classList.remove('hidden');
+        if (this.labelTone) {
+          this.labelTone.textContent = 'Tono de respuesta:';
+        }
+        break;
+    }
+
+    this.updateOptionHints();
+  }
+
+  private updateOptionHints(): void {
+    if (this.toneSelect && this.toneHintText) {
+      const toneVal = this.toneSelect.value as ToneOption;
+      this.toneHintText.textContent = TONE_HINT_TEXTS[toneVal] || '';
+    }
+    if (this.paraphraseLevelSelect && this.paraphraseHintText) {
+      const levelVal = this.paraphraseLevelSelect.value as ParaphraseLevel;
+      this.paraphraseHintText.textContent = PARAPHRASE_HINT_TEXTS[levelVal] || '';
+    }
   }
 
   private setupEventListeners(): void {
     // Contador de caracteres y límite
     this.inputTextarea.addEventListener('input', () => {
       this.updateCharCount();
-      // Si el usuario borra el texto manualmente, ocultamos el indicador de origen
-      if (this.sourceIndicator && !this.inputTextarea.value) {
+      if (!this.inputTextarea.value.trim() && this.sourceIndicator) {
         this.sourceIndicator.classList.add('hidden');
-        this.currentSelectionContext = null;
-        this.updateReplaceButtonVisibility();
       }
     });
 
-    // Botón para capturar selección bajo demanda
+    // Botón para capturar texto seleccionado
     this.btnGetSelection?.addEventListener('click', async () => {
       await this.fetchSelectionFromActiveTab();
     });
 
-    // Botones de acción principales
+    // Píldoras de acción (Seleccionar acción didáctica)
     this.actionButtons.forEach((btn) => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         const action = btn.dataset.action as ActionType;
         if (action) {
-          await this.executeAction(action);
+          this.selectAction(action);
         }
       });
+    });
+
+    // Selectores con actualización de hint interactivo
+    this.toneSelect?.addEventListener('change', () => this.updateOptionHints());
+    this.paraphraseLevelSelect?.addEventListener('change', () => this.updateOptionHints());
+
+    // Botón principal de procesado
+    this.btnProcessAi?.addEventListener('click', async () => {
+      await this.executeAction(this.selectedAction);
     });
 
     // Acciones del resultado
@@ -207,19 +302,16 @@ export class AssistantView {
         return;
       }
 
-      // Intentar enviar mensaje al Content Script
       let response;
       try {
         response = await chrome.tabs.sendMessage(activeTab.id, { type: 'GET_SELECTED_TEXT' });
       } catch {
-        // Si no está inyectado, intenta inyectar el script con chrome.scripting
         if (chrome.scripting) {
           try {
             await chrome.scripting.executeScript({
               target: { tabId: activeTab.id },
               files: ['content-script.js'],
             });
-            // Reintentar tras inyección
             response = await chrome.tabs.sendMessage(activeTab.id, { type: 'GET_SELECTED_TEXT' });
           } catch {
             showToast('No se pudo interactuar con la página actual.', 'error');
@@ -310,9 +402,17 @@ export class AssistantView {
     if (processing) {
       this.loadingIndicator.classList.add('active');
       this.actionButtons.forEach((b) => (b.disabled = true));
+      if (this.btnProcessAi) {
+        this.btnProcessAi.disabled = true;
+        this.btnProcessAi.textContent = 'Procesando...';
+      }
     } else {
       this.loadingIndicator.classList.remove('active');
       this.actionButtons.forEach((b) => (b.disabled = false));
+      if (this.btnProcessAi) {
+        this.btnProcessAi.disabled = false;
+        this.btnProcessAi.textContent = '⚡ Procesar con IA';
+      }
     }
   }
 
@@ -326,7 +426,7 @@ export class AssistantView {
       return;
     }
 
-    this.lastAction = action;
+    this.lastExecutedAction = action;
     const rawTone = this.toneSelect.value as ToneOption;
     const rawLevel = this.paraphraseLevelSelect.value as ParaphraseLevel;
 
@@ -427,8 +527,8 @@ export class AssistantView {
       return;
     }
 
-    const title = this.lastAction
-      ? `Respuesta - ${this.lastAction.charAt(0).toUpperCase() + this.lastAction.slice(1)}`
+    const title = this.lastExecutedAction
+      ? `Respuesta - ${this.lastExecutedAction.charAt(0).toUpperCase() + this.lastExecutedAction.slice(1)}`
       : 'Texto Guardado';
 
     try {
@@ -460,10 +560,10 @@ export class AssistantView {
   }
 
   private async regenerate(): Promise<void> {
-    if (this.lastAction) {
-      await this.executeAction(this.lastAction);
+    if (this.lastExecutedAction) {
+      await this.executeAction(this.lastExecutedAction);
     } else {
-      await this.executeAction('profesionalizar');
+      await this.executeAction(this.selectedAction);
     }
   }
 
@@ -479,7 +579,7 @@ export class AssistantView {
     this.resultTextarea.value = '';
     this.updateCharCount();
     this.resultSection.classList.remove('visible');
-    this.lastAction = null;
+    this.lastExecutedAction = null;
     this.currentSelectionContext = null;
     if (this.sourceIndicator) {
       this.sourceIndicator.classList.add('hidden');

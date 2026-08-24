@@ -276,3 +276,66 @@ export async function testBackendConnection(text = 'Prueba de conexión desde Si
     };
   }
 }
+
+export interface RemoteQuickText {
+  id: string;
+  userId: string;
+  title: string;
+  header: string;
+  body: string;
+  solution?: string | null;
+  isShared: boolean;
+  isOwner?: boolean;
+  ownerDisplayName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchRemoteQuickTexts(): Promise<{ success: boolean; data?: RemoteQuickText[]; error?: { message?: string } }> {
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}`);
+    const parsed = await safeParseJson<{ success: boolean; data: RemoteQuickText[]; error?: { message?: string } }>(response);
+    return parsed.data || { success: false, error: { message: parsed.error } };
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al obtener textos rápidos.' } };
+  }
+}
+
+export async function createRemoteQuickText(item: { title: string; header: string; body: string; solution?: string; isShared?: boolean }): Promise<{ success: boolean; data?: RemoteQuickText; error?: { message?: string } }> {
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}`, {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+    const parsed = await safeParseJson<{ success: boolean; data: RemoteQuickText; error?: { message?: string } }>(response);
+    return parsed.data || { success: false, error: { message: parsed.error } };
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al crear texto rápido.' } };
+  }
+}
+
+export async function updateRemoteQuickText(id: string, updates: { title?: string; header?: string; body?: string; solution?: string; isShared?: boolean }): Promise<{ success: boolean; data?: RemoteQuickText; error?: { message?: string } }> {
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+    const parsed = await safeParseJson<{ success: boolean; data: RemoteQuickText; error?: { message?: string } }>(response);
+    return parsed.data || { success: false, error: { message: parsed.error } };
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al actualizar texto rápido.' } };
+  }
+}
+
+export async function deleteRemoteQuickText(id: string): Promise<{ success: boolean; data?: { message: string }; error?: { message?: string } }> {
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}/${id}`, {
+      method: 'DELETE',
+    });
+    const parsed = await safeParseJson<{ success: boolean; data: { message: string }; error?: { message?: string } }>(response);
+    return parsed.data || { success: false, error: { message: parsed.error } };
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al eliminar texto rápido.' } };
+  }
+}
+

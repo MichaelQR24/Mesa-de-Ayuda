@@ -18,6 +18,7 @@ export const API_CONFIG = {
     HISTORY: '/api/v1/history',
     LIBRARY: '/api/v1/library',
     CATEGORIES: '/api/v1/categories',
+    QUICK_TEXTS: '/api/v1/quick-texts',
     ADMIN_USERS: '/api/v1/admin/users',
   },
 } as const;

@@ -8,50 +8,74 @@ export interface UserSession {
   mustChangePassword: boolean;
 }
 
-async function safeJsonParse(response: Response): Promise<{ ok: boolean; data?: any; error?: string }> {
+interface StoredAuthData {
+  accessToken?: string;
+  refreshToken?: string;
+  user?: UserSession;
+  tokenExpiresAt?: number;
+}
+
+function parseJwtExpiration(token: string | null | undefined): number | null {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload && typeof payload.exp === 'number') {
+      return payload.exp * 1000; // ms
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function safeJsonParse(response: Response): Promise<{ ok: boolean; status: number; data?: any; error?: string }> {
   const text = await response.text();
   try {
     const json = JSON.parse(text);
-    return { ok: response.ok, data: json };
+    return { ok: response.ok, status: response.status, data: json };
   } catch {
     if (response.status === 404) {
-      return { ok: false, error: `No se encontró el servicio en ${API_CONFIG.BASE_URL} (HTTP 404). Verifica que la URL del backend en Render sea correcta.` };
+      return { ok: false, status: 404, error: `No se encontró el servicio en ${API_CONFIG.BASE_URL} (HTTP 404). Verifica la URL del backend.` };
     }
     if (response.status === 502 || response.status === 503) {
-      return { ok: false, error: `El servidor en ${API_CONFIG.BASE_URL} está iniciando o no disponible temporalmente (HTTP ${response.status}). Intenta en unos segundos.` };
+      return { ok: false, status: response.status, error: `El servidor backend está iniciando o en reposo (HTTP ${response.status}). Intenta en unos momentos.` };
     }
-    return { ok: false, error: text || `Error de comunicación con el servidor (HTTP ${response.status})` };
+    return { ok: false, status: response.status, error: text || `Error de comunicación con el servidor (HTTP ${response.status})` };
   }
 }
 
 export class AuthService {
   private accessToken: string | null = null;
   private currentUser: UserSession | null = null;
+  private tokenExpiresAt: number | null = null;
   private refreshPromise: Promise<boolean> | null = null;
 
   async init(): Promise<void> {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        if (chrome.storage.session) {
-          const sessionData = await chrome.storage.session.get(['accessToken', 'user']) as { accessToken?: string; user?: UserSession };
-          if (sessionData.accessToken) {
-            this.accessToken = sessionData.accessToken;
-          }
-          if (sessionData.user) {
-            this.currentUser = sessionData.user;
-          }
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        const stored = (await chrome.storage.local.get(['accessToken', 'refreshToken', 'user', 'tokenExpiresAt'])) as StoredAuthData;
+
+        if (stored.user) {
+          this.currentUser = stored.user;
         }
 
-        if (!this.accessToken) {
-          const localData = await chrome.storage.local.get(['refreshToken', 'user']) as { refreshToken?: string; user?: UserSession };
-          if (localData.refreshToken) {
-            if (localData.user) this.currentUser = localData.user;
-            await this.refreshTokens();
-          }
+        if (stored.accessToken) {
+          this.accessToken = stored.accessToken;
+          this.tokenExpiresAt = stored.tokenExpiresAt || parseJwtExpiration(stored.accessToken);
+        }
+
+        const now = Date.now();
+        // Margen de seguridad: si expira en menos de 60 segundos o ya expiró
+        const isAccessTokenExpired = !this.accessToken || !this.tokenExpiresAt || this.tokenExpiresAt - now < 60000;
+
+        if (isAccessTokenExpired && stored.refreshToken) {
+          await this.refreshTokens();
         }
       }
-    } catch {
-      // Ignora errores iniciales
+    } catch (err) {
+      console.warn('[AuthService] Error durante la inicialización de sesión:', err);
     }
   }
 
@@ -86,20 +110,15 @@ export class AuthService {
 
       this.accessToken = parsed.data.data.accessToken;
       this.currentUser = parsed.data.data.user;
+      this.tokenExpiresAt = parseJwtExpiration(this.accessToken) || (Date.now() + 15 * 60 * 1000);
 
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        if (chrome.storage.session) {
-          await chrome.storage.session.set({
-            accessToken: this.accessToken,
-            user: this.currentUser,
-          });
-        }
-        if (chrome.storage.local) {
-          await chrome.storage.local.set({
-            refreshToken: parsed.data.data.refreshToken,
-            user: this.currentUser,
-          });
-        }
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({
+          accessToken: this.accessToken,
+          refreshToken: parsed.data.data.refreshToken,
+          user: this.currentUser,
+          tokenExpiresAt: this.tokenExpiresAt,
+        });
       }
 
       return {
@@ -115,7 +134,6 @@ export class AuthService {
   }
 
   async refreshTokens(): Promise<boolean> {
-    // Si ya existe una llamada de refresco en curso, retornar la misma promesa (Request Coalescing)
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
@@ -127,7 +145,9 @@ export class AuthService {
         }
 
         const { refreshToken } = (await chrome.storage.local.get(['refreshToken'])) as { refreshToken?: string };
-        if (!refreshToken) return false;
+        if (!refreshToken) {
+          return false;
+        }
 
         const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_REFRESH}`, {
           method: 'POST',
@@ -138,22 +158,31 @@ export class AuthService {
         const parsed = await safeJsonParse(response);
 
         if (!parsed.ok || !parsed.data || !parsed.data.success) {
-          await this.logout();
+          // Solo hacer logout si el backend rechaza explícitamente el token con 401/403
+          if (parsed.status === 401 || parsed.status === 403) {
+            await this.logout();
+          }
           return false;
         }
 
         this.accessToken = parsed.data.data.accessToken;
+        this.tokenExpiresAt = parseJwtExpiration(this.accessToken) || (Date.now() + 15 * 60 * 1000);
 
-        if (chrome.storage.session) {
-          await chrome.storage.session.set({ accessToken: this.accessToken });
+        if (parsed.data.data.user) {
+          this.currentUser = parsed.data.data.user;
         }
-        if (chrome.storage.local) {
-          await chrome.storage.local.set({ refreshToken: parsed.data.data.refreshToken });
-        }
+
+        await chrome.storage.local.set({
+          accessToken: this.accessToken,
+          refreshToken: parsed.data.data.refreshToken,
+          user: this.currentUser,
+          tokenExpiresAt: this.tokenExpiresAt,
+        });
 
         return true;
-      } catch {
-        await this.logout();
+      } catch (networkErr) {
+        // En caso de fallo de red transitorio o servidor apagado, NO eliminamos la sesión local
+        console.warn('[AuthService] Fallo transitorio al refrescar token (reintentará más tarde):', networkErr);
         return false;
       } finally {
         this.refreshPromise = null;
@@ -189,20 +218,15 @@ export class AuthService {
 
       this.accessToken = parsed.data.data.accessToken;
       this.currentUser = parsed.data.data.user;
+      this.tokenExpiresAt = parseJwtExpiration(this.accessToken) || (Date.now() + 15 * 60 * 1000);
 
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        if (chrome.storage.session) {
-          await chrome.storage.session.set({
-            accessToken: this.accessToken,
-            user: this.currentUser,
-          });
-        }
-        if (chrome.storage.local) {
-          await chrome.storage.local.set({
-            refreshToken: parsed.data.data.refreshToken,
-            user: this.currentUser,
-          });
-        }
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({
+          accessToken: this.accessToken,
+          refreshToken: parsed.data.data.refreshToken,
+          user: this.currentUser,
+          tokenExpiresAt: this.tokenExpiresAt,
+        });
       }
 
       return { success: true };
@@ -228,14 +252,10 @@ export class AuthService {
     } finally {
       this.accessToken = null;
       this.currentUser = null;
+      this.tokenExpiresAt = null;
 
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        if (chrome.storage.session) {
-          await chrome.storage.session.remove(['accessToken', 'user']).catch(() => {});
-        }
-        if (chrome.storage.local) {
-          await chrome.storage.local.remove(['refreshToken', 'user']).catch(() => {});
-        }
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(['accessToken', 'refreshToken', 'user', 'tokenExpiresAt']).catch(() => {});
       }
     }
   }
