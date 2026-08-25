@@ -209,6 +209,23 @@ export class NavigationManager {
     // Notificar a listeners
     this.tabChangeListeners.forEach((listener) => listener(tab));
   }
+
+  setConnectionStatus(status: 'connected' | 'connecting' | 'offline'): void {
+    const dot = document.querySelector<HTMLElement>('.status-indicator-dot');
+    if (!dot) return;
+
+    dot.classList.remove('status-connected', 'status-connecting', 'status-offline');
+    dot.classList.add(`status-${status}`);
+
+    if (status === 'connected') {
+      dot.title = 'Conectado con Mesa de Ayuda';
+    } else if (status === 'connecting') {
+      dot.title = 'Conectando con Mesa de Ayuda...';
+    } else {
+      dot.title = 'Servidor en reposo o sin conexión (reintentará automáticamente)';
+    }
+  }
 }
 
 export const navigationManager = new NavigationManager();
+

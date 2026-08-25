@@ -5,6 +5,7 @@
 
 import { ActionType } from '../sidepanel/types/index';
 import { SelectedTextContext } from '../types/messaging.types';
+import { API_CONFIG } from '../sidepanel/config/api';
 
 export const MENU_ROOT_ID = 'mesa-ayuda-root';
 
@@ -31,7 +32,23 @@ const ALLOWED_MESSAGE_TYPES = new Set([
   'LOAD_SELECTION',
   'CLEAR_SELECTION_CONTEXT',
   'PING',
+  'WARMUP',
 ]);
+
+/**
+ * Warm-up no bloqueante para despertar Render cuando el usuario interactúa
+ */
+let lastWarmupTime = 0;
+export function triggerWarmup(): void {
+  const now = Date.now();
+  // Evitar warmups duplicados en menos de 30 segundos
+  if (now - lastWarmupTime < 30000) return;
+  lastWarmupTime = now;
+
+  try {
+    fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`).catch(() => {});
+  } catch {}
+}
 
 /**
  * Función pura para resolver la acción a partir del menuItemId
@@ -96,6 +113,9 @@ if (typeof chrome !== 'undefined' && chrome.contextMenus && chrome.contextMenus.
 
     const rawSelection = (info.selectionText || '').trim();
     if (!rawSelection) return;
+
+    // Disparar warm-up de Render al interactuar con el menú
+    triggerWarmup();
 
     // Abrir Side Panel en la pestaña actual
     if (chrome.sidePanel && chrome.sidePanel.open) {

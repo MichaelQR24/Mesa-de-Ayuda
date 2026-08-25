@@ -12,10 +12,11 @@ import { quickTextsView } from './components/quick-texts-view';
 import { historyView } from './components/history-view';
 import { savedView } from './components/saved-view';
 import { settingsView } from './components/settings-view';
+import { API_CONFIG } from './config/api';
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // 1. Inicializar servicio de autenticación
+    // 1. FAST PATH: Restaurar sesión local de inmediato sin esperar al backend
     await authService.init();
 
     // 2. Inicializar gestores de navegación y formularios de auth
@@ -23,14 +24,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     loginView.init();
     changePasswordView.init();
 
-    // 3. Inicializar componentes de vistas
+    // 3. Suscribir estado de conexión al indicador visual
+    authService.onConnectionStateChange((state) => {
+      navigationManager.setConnectionStatus(state);
+    });
+
+    // 4. Inicializar componentes de vistas
     await settingsView.init();
     await assistantView.init();
     quickTextsView.init();
     await historyView.init();
     await savedView.init();
 
-    // 4. Suscribirse a cambios de pestaña para refrescar datos dinámicamente
+    // 5. Suscribirse a cambios de pestaña para refrescar datos dinámicamente
     navigationManager.onTabChange((tab) => {
       switch (tab) {
         case 'asistente':
@@ -51,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // 5. Determinar vista inicial según el estado de sesión
+    // 6. Determinar vista inicial según el estado de sesión local
     const user = authService.getUser();
     if (!authService.isAuthenticated() || !user) {
       navigationManager.showLogin();
@@ -61,7 +67,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       navigationManager.showAuthenticatedApp();
     }
 
-    console.log('[Mesa de Ayuda] Frontend del Side Panel inicializado correctamente.');
+    // 7. WARM-UP INTELIGENTE NO BLOQUEANTE: Despertar Render en segundo plano
+    fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`)
+      .then((res) => {
+        if (res.ok) {
+          navigationManager.setConnectionStatus('connected');
+        }
+      })
+      .catch(() => {
+        // En caso de cold start transitorio, el refresh/retry automático se encargará
+      });
+
+    console.log('[Mesa de Ayuda] Frontend del Side Panel inicializado instantáneamente (Fast Path).');
   } catch (error) {
     console.error('[Mesa de Ayuda] Error inicializando el Side Panel:', error);
   }

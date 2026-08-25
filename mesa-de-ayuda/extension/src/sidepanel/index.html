@@ -24,7 +24,7 @@
             <button type="button" id="btn-open-admin" class="btn-admin-icon hidden" title="Abrir Panel de Administración">🛡️</button>
             <button type="button" id="btn-logout" class="btn-logout-icon" title="Cerrar sesión">⏻</button>
           </div>
-          <span class="status-indicator-dot" title="Sistema operativo"></span>
+          <span id="connection-status-dot" class="status-indicator-dot" title="Conectado con Mesa de Ayuda"></span>
         </div>
       </header>
 
@@ -54,7 +54,7 @@
       <!-- Contenedor Principal de Vistas -->
       <main class="main-content">
         <!-- 0. VISTA INICIAR SESIÓN -->
-        <section id="view-login" class="view-panel view-active">
+        <section id="view-login" class="view-panel">
           <div class="card-section auth-card">
             <div class="auth-header">
               <div class="auth-logo-circle">🔐</div>

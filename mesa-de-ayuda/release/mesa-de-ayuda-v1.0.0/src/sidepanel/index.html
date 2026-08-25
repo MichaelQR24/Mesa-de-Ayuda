@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mesa de Ayuda</title>
-    <script type="module" crossorigin src="../../assets/sidepanel-CDoWoyv6.js"></script>
-    <link rel="modulepreload" crossorigin href="../../assets/auth-service-CplcYRb3.js">
-    <link rel="stylesheet" crossorigin href="../../assets/sidepanel-l7BKwIGM.css">
+    <script type="module" crossorigin src="../../assets/sidepanel-C28T-WZi.js"></script>
+    <link rel="modulepreload" crossorigin href="../../assets/api-BkNA0eVM.js">
+    <link rel="modulepreload" crossorigin href="../../assets/auth-service-CEAjQS__.js">
+    <link rel="stylesheet" crossorigin href="../../assets/sidepanel-BVPMyEyS.css">
   </head>
   <body>
     <div class="app-wrapper">
@@ -26,7 +27,7 @@
             <button type="button" id="btn-open-admin" class="btn-admin-icon hidden" title="Abrir Panel de Administración">🛡️</button>
             <button type="button" id="btn-logout" class="btn-logout-icon" title="Cerrar sesión">⏻</button>
           </div>
-          <span class="status-indicator-dot" title="Sistema operativo"></span>
+          <span id="connection-status-dot" class="status-indicator-dot" title="Conectado con Mesa de Ayuda"></span>
         </div>
       </header>
 
@@ -56,7 +57,7 @@
       <!-- Contenedor Principal de Vistas -->
       <main class="main-content">
         <!-- 0. VISTA INICIAR SESIÓN -->
-        <section id="view-login" class="view-panel view-active">
+        <section id="view-login" class="view-panel">
           <div class="card-section auth-card">
             <div class="auth-header">
               <div class="auth-logo-circle">🔐</div>

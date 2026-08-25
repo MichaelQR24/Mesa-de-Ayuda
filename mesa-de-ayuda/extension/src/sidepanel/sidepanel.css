@@ -189,6 +189,34 @@ body {
   border-radius: 50%;
   background-color: var(--color-success);
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  transition: all 0.25s ease;
+}
+
+.status-indicator-dot.status-connected {
+  background-color: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.status-indicator-dot.status-connecting {
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+  animation: statusPulse 1.4s infinite ease-in-out;
+}
+
+.status-indicator-dot.status-offline {
+  background-color: #94a3b8;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25);
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.65;
+  }
 }
 
 .status-label-badge {
