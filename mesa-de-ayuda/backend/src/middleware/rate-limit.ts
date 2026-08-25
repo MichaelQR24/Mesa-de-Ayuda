@@ -7,12 +7,17 @@ export const apiLimiter = rateLimit({
   limit: 200,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Demasiadas solicitudes desde esta IP, por favor intenta nuevamente más tarde.',
-    },
+  handler: (req: Request, res: Response) => {
+    const requestId = (req as any).requestId || undefined;
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Demasiadas solicitudes desde esta IP, por favor intenta nuevamente más tarde.',
+        source: 'rate-limit',
+        requestId,
+      },
+    });
   },
 });
 
@@ -21,12 +26,17 @@ export const authLimiter = rateLimit({
   limit: 15,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: 'AUTH_RATE_LIMIT_EXCEEDED',
-      message: 'Demasiados intentos de inicio de sesión. Por favor, intente nuevamente en 15 minutos.',
-    },
+  handler: (req: Request, res: Response) => {
+    const requestId = (req as any).requestId || undefined;
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'AUTH_RATE_LIMIT_EXCEEDED',
+        message: 'Demasiados intentos de inicio de sesión. Por favor, intente nuevamente en 15 minutos.',
+        source: 'rate-limit',
+        requestId,
+      },
+    });
   },
 });
 
@@ -38,11 +48,16 @@ export const aiLimiter = rateLimit({
   keyGenerator: (req: Request, _res: Response): string => {
     return req.user?.id || req.ip || 'anonymous';
   },
-  message: {
-    success: false,
-    error: {
-      code: 'AI_RATE_LIMIT_EXCEEDED',
-      message: 'Has superado el límite de velocidad de consultas de IA por minuto. Por favor, espera unos instantes.',
-    },
+  handler: (req: Request, res: Response) => {
+    const requestId = (req as any).requestId || undefined;
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'AI_RATE_LIMIT_EXCEEDED',
+        message: 'Has superado el límite de velocidad de consultas de IA por minuto. Por favor, espera unos instantes.',
+        source: 'rate-limit',
+        requestId,
+      },
+    });
   },
 });

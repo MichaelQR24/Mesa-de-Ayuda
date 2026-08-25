@@ -1,6 +1,14 @@
 export type AiAction = 'correct' | 'paraphrase' | 'professionalize' | 'summarize' | 'reply';
 
-export type AiTone = 'professional' | 'formal' | 'friendly' | 'technical' | 'casual';
+export type AiTone =
+  | 'professional'
+  | 'formal'
+  | 'friendly'
+  | 'technical'
+  | 'casual'
+  | 'helpdesk'
+  | 'institutional'
+  | 'direct';
 
 export type AiParaphraseLevel = 'soft' | 'medium' | 'complete';
 
@@ -9,6 +17,7 @@ export interface AiProcessInput {
   action: AiAction;
   tone?: AiTone;
   paraphraseLevel?: AiParaphraseLevel;
+  preserveInfinitives?: boolean;
   userId?: string | null;
 }
 

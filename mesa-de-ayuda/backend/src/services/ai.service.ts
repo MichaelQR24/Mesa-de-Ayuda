@@ -22,6 +22,9 @@ const TONE_PRISMA_MAP: Record<string, PrismaTone> = {
   friendly: PrismaTone.FRIENDLY,
   technical: PrismaTone.TECHNICAL,
   casual: PrismaTone.CASUAL,
+  helpdesk: PrismaTone.TECHNICAL,
+  institutional: PrismaTone.FORMAL,
+  direct: PrismaTone.PROFESSIONAL,
 };
 
 const LEVEL_PRISMA_MAP: Record<string, PrismaParaphraseLevel> = {
@@ -36,7 +39,15 @@ export interface EnhancedAiProcessInput extends AiProcessInput {
 
 export class AiService {
   async processText(input: EnhancedAiProcessInput): Promise<AiProcessResult> {
-    const { text, action, tone = 'professional', paraphraseLevel = 'medium', userId = null, redactSensitiveData = false } = input;
+    const {
+      text,
+      action,
+      tone = 'professional',
+      paraphraseLevel = 'medium',
+      preserveInfinitives = true,
+      userId = null,
+      redactSensitiveData = false,
+    } = input;
 
     // 1. Detección y bloqueo de datos sensibles (SensitiveDataGuard)
     const analysis = sensitiveDataGuard.analyze(text);
@@ -56,6 +67,7 @@ export class AiService {
         `La solicitud contiene datos críticos bloqueados por seguridad (${analysis.detectionTypes.join(', ')}). No se enviará a la IA.`
       );
       (blockedErr as any).code = 'SENSITIVE_DATA_BLOCKED';
+      (blockedErr as any).source = 'validation';
       (blockedErr as any).statusCode = 400;
       throw blockedErr;
     }
@@ -81,6 +93,7 @@ export class AiService {
               `Has alcanzado tu límite mensual de tokens de IA (${usedTokens.toLocaleString()} / ${userRecord.monthlyTokenLimit.toLocaleString()}). Comunícate con el administrador.`
             );
             (limitError as any).code = 'MONTHLY_AI_LIMIT_REACHED';
+            (limitError as any).source = 'rate-limit';
             (limitError as any).statusCode = 429;
             throw limitError;
           }
@@ -92,7 +105,7 @@ export class AiService {
       }
     }
 
-    const systemPrompt = buildSystemPrompt(action, tone, paraphraseLevel);
+    const systemPrompt = buildSystemPrompt(action, tone, paraphraseLevel, preserveInfinitives);
 
     const completionOptions = {
       correct: { maxTokens: 1024, temperature: 0.1 },
@@ -145,6 +158,7 @@ export class AiService {
       if (errorMessage.includes('GROQ_API_KEY no está configurada') || (error as any).code === 'API_KEY_MISSING') {
         const err = new Error('La clave de API de Groq (GROQ_API_KEY) no está configurada en el servidor.');
         (err as any).code = 'API_KEY_MISSING';
+        (err as any).source = 'backend';
         (err as any).statusCode = 500;
         throw err;
       }
@@ -153,6 +167,7 @@ export class AiService {
       if (errorStatus === 404 || errorMessage.includes('model_not_found') || errorMessage.includes('does not exist')) {
         const err = new Error('El modelo de IA configurado no está disponible. Contacta al administrador.');
         (err as any).code = 'AI_MODEL_NOT_FOUND';
+        (err as any).source = 'groq';
         (err as any).statusCode = 502;
         throw err;
       }
@@ -161,6 +176,7 @@ export class AiService {
       if (errorStatus === 401 || errorMessage.includes('invalid_api_key') || errorMessage.includes('Unauthorized')) {
         const err = new Error('Error de autenticación con el proveedor de IA. Contacta al administrador.');
         (err as any).code = 'AI_AUTHENTICATION_ERROR';
+        (err as any).source = 'groq';
         (err as any).statusCode = 502;
         throw err;
       }
@@ -169,6 +185,7 @@ export class AiService {
       if (errorStatus === 429 || errorMessage.includes('rate_limit_exceeded') || errorMessage.includes('Rate limit')) {
         const err = new Error('El servicio de IA ha alcanzado temporalmente su límite de solicitudes. Intenta de nuevo en unos momentos.');
         (err as any).code = 'AI_RATE_LIMIT_EXCEEDED';
+        (err as any).source = 'groq';
         (err as any).statusCode = 429;
         throw err;
       }
@@ -177,6 +194,7 @@ export class AiService {
       if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT') || errorMessage.includes('aborted') || errorStatus === 504) {
         const err = new Error('Tiempo de espera agotado al conectar con el proveedor de IA.');
         (err as any).code = 'AI_TIMEOUT';
+        (err as any).source = 'groq';
         (err as any).statusCode = 504;
         throw err;
       }
@@ -185,12 +203,14 @@ export class AiService {
       if (typeof errorStatus === 'number' && errorStatus >= 500 && errorStatus < 600) {
         const err = new Error('El proveedor de IA se encuentra temporalmente no disponible. Intenta más tarde.');
         (err as any).code = 'AI_SERVICE_UNAVAILABLE';
+        (err as any).source = 'groq';
         (err as any).statusCode = 503;
         throw err;
       }
 
       const err = new Error('No fue posible procesar el texto con el servicio de IA en este momento.');
       (err as any).code = 'AI_PROVIDER_ERROR';
+      (err as any).source = 'groq';
       (err as any).statusCode = 502;
       throw err;
     }

@@ -5,6 +5,7 @@ import { UserRole, UserStatus } from '@prisma/client';
 
 export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = req.headers.authorization;
+  const requestId = (req as any).requestId || undefined;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
@@ -12,6 +13,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       error: {
         code: 'UNAUTHORIZED',
         message: 'Acceso no autorizado. Se requiere token Bearer válido.',
+        source: 'auth',
+        requestId,
       },
     });
     return;
@@ -29,6 +32,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         error: {
           code: 'UNAUTHORIZED',
           message: 'El usuario asociado a esta sesión no existe.',
+          source: 'auth',
+          requestId,
         },
       });
       return;
@@ -40,6 +45,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         error: {
           code: 'ACCOUNT_INACTIVE',
           message: 'La cuenta de usuario se encuentra inactiva.',
+          source: 'auth',
+          requestId,
         },
       });
       return;
@@ -54,6 +61,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       error: {
         code: isExpired ? 'TOKEN_EXPIRED' : 'UNAUTHORIZED',
         message: isExpired ? 'El token de acceso ha expirado.' : 'Token de acceso inválido.',
+        source: 'auth',
+        requestId,
       },
     });
   }
@@ -61,12 +70,16 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
 export const requireRole = (role: UserRole) => {
   return (req: Request, res: Response, next: NextFunction): void => {
+    const requestId = (req as any).requestId || undefined;
+
     if (!req.user) {
       res.status(401).json({
         success: false,
         error: {
           code: 'UNAUTHORIZED',
           message: 'Usuario no autenticado.',
+          source: 'auth',
+          requestId,
         },
       });
       return;
@@ -78,6 +91,8 @@ export const requireRole = (role: UserRole) => {
         error: {
           code: 'FORBIDDEN',
           message: 'No posee los permisos necesarios para realizar esta acción.',
+          source: 'auth',
+          requestId,
         },
       });
       return;
@@ -88,12 +103,16 @@ export const requireRole = (role: UserRole) => {
 };
 
 export const checkPasswordChangeRequired = (req: Request, res: Response, next: NextFunction): void => {
+  const requestId = (req as any).requestId || undefined;
+
   if (req.user && req.user.mustChangePassword) {
     res.status(403).json({
       success: false,
       error: {
         code: 'PASSWORD_CHANGE_REQUIRED',
         message: 'Debe cambiar su contraseña antes de continuar utilizando el asistente.',
+        source: 'auth',
+        requestId,
       },
     });
     return;

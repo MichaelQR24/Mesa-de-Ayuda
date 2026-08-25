@@ -1,22 +1,34 @@
 import { API_CONFIG } from '../config/api';
 import { authService } from './auth-service';
 
-export interface TestApiResponse {
-  success: boolean;
-  data?: {
-    receivedText: string;
-    message: string;
-  };
-  error?: {
-    code: string;
-    message: string;
-  };
+export type ApiErrorSource =
+  | 'frontend'
+  | 'validation'
+  | 'auth'
+  | 'backend'
+  | 'database'
+  | 'groq'
+  | 'rate-limit'
+  | 'network'
+  | 'unknown';
+
+export interface StructuredApiError {
+  code: string;
+  message: string;
+  source: ApiErrorSource;
+  requestId?: string;
+  status?: number;
+  endpoint?: string;
+  details?: Array<{ field: string; message: string }>;
 }
 
-export interface AiApiUsage {
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
+export interface AiProcessRequestParams {
+  text: string;
+  action: 'correct' | 'paraphrase' | 'professionalize' | 'summarize' | 'reply';
+  tone?: string;
+  paraphraseLevel?: 'soft' | 'medium' | 'complete';
+  preserveInfinitives?: boolean;
+  redactSensitiveData?: boolean;
 }
 
 export interface AiApiResponse {
@@ -24,36 +36,76 @@ export interface AiApiResponse {
   data?: {
     result: string;
     model: string;
-    usage?: AiApiUsage;
+    usage?: {
+      inputTokens: number;
+      outputTokens: number;
+      totalTokens: number;
+    };
   };
-  error?: {
-    code: string;
-    message: string;
-  };
+  error?: StructuredApiError;
 }
 
-export interface AiProcessRequestParams {
-  text: string;
-  action: 'correct' | 'paraphrase' | 'professionalize' | 'summarize' | 'reply';
-  tone?: 'professional' | 'formal' | 'friendly' | 'technical' | 'casual';
-  paraphraseLevel?: 'soft' | 'medium' | 'complete';
-  redactSensitiveData?: boolean;
-}
+async function safeParseResponse<T>(
+  response: Response,
+  endpoint: string
+): Promise<{ ok: boolean; data?: T; error?: StructuredApiError }> {
+  const status = response.status;
+  const requestId = response.headers.get('x-request-id') || undefined;
 
-async function safeParseJson<T>(response: Response): Promise<{ ok: boolean; data?: T; error?: string }> {
-  const text = await response.text();
+  let bodyText = '';
   try {
-    const json = JSON.parse(text);
-    return { ok: response.ok, data: json as T };
-  } catch {
-    if (response.status === 404) {
-      return { ok: false, error: `No se encontró el servicio en ${API_CONFIG.BASE_URL} (HTTP 404). Verifica que la URL del backend en Render sea correcta.` };
+    bodyText = await response.text();
+    const json = JSON.parse(bodyText);
+
+    if (json && typeof json === 'object') {
+      if (json.success === false && json.error) {
+        return {
+          ok: false,
+          error: {
+            code: json.error.code || 'SERVER_ERROR',
+            message: json.error.message || `Error del servidor (HTTP ${status}).`,
+            source: json.error.source || (status === 401 || status === 403 ? 'auth' : status === 400 ? 'validation' : status === 502 || status === 504 ? 'groq' : 'backend'),
+            requestId: json.error.requestId || requestId,
+            status,
+            endpoint,
+            details: json.error.details,
+          },
+        };
+      }
+      return { ok: response.ok, data: json as T };
     }
-    if (response.status === 502 || response.status === 503) {
-      return { ok: false, error: `El servidor en ${API_CONFIG.BASE_URL} está iniciando o no disponible temporalmente (HTTP ${response.status}).` };
-    }
-    return { ok: false, error: text || `Error de servidor HTTP ${response.status}` };
+  } catch {}
+
+  // Fallback para respuestas no JSON (ej. HTML 404/502 de proxies/Render)
+  let source: ApiErrorSource = 'backend';
+  let code = 'HTTP_ERROR';
+  let message = `Error del servidor HTTP ${status}`;
+
+  if (status === 404) {
+    source = 'backend';
+    code = 'NOT_FOUND';
+    message = `No se encontró el servicio en ${API_CONFIG.BASE_URL} (HTTP 404). Verifica que la URL del backend sea correcta.`;
+  } else if (status === 502 || status === 503) {
+    source = 'backend';
+    code = 'SERVICE_UNAVAILABLE';
+    message = `El servidor backend está iniciando o temporalmente no disponible (HTTP ${status}).`;
+  } else if (status === 504) {
+    source = 'backend';
+    code = 'GATEWAY_TIMEOUT';
+    message = `Tiempo de espera agotado al conectar con el servidor (HTTP 504).`;
   }
+
+  return {
+    ok: false,
+    error: {
+      code,
+      message,
+      source,
+      requestId,
+      status,
+      endpoint,
+    },
+  };
 }
 
 async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
@@ -85,31 +137,66 @@ async function authenticatedFetch(url: string, options: RequestInit = {}): Promi
   return response;
 }
 
-export async function processAiText(params: AiProcessRequestParams): Promise<AiApiResponse> {
+export async function testBackendConnection(testText = 'Prueba de conexión'): Promise<{ success: boolean; data?: any; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.TEST;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AI_PROCESS}`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: testText }),
+    });
+    const parsed = await safeParseResponse<{ success: boolean; message: string; receivedText: string; timestamp: string }>(response, endpoint);
+    if (parsed.ok && parsed.data) {
+      return { success: true, data: parsed.data };
+    }
+    return { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: 'No se pudo conectar con el servidor backend.',
+        source: 'network',
+        endpoint,
+      },
+    };
+  }
+}
+
+export async function processAiText(params: AiProcessRequestParams): Promise<AiApiResponse> {
+  const endpoint = API_CONFIG.ENDPOINTS.AI_PROCESS;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
       method: 'POST',
       body: JSON.stringify(params),
     });
 
-    const parsed = await safeParseJson<AiApiResponse>(response);
+    const parsed = await safeParseResponse<AiApiResponse>(response, endpoint);
     if (!parsed.ok || !parsed.data) {
       return {
         success: false,
-        error: {
+        error: parsed.error || {
           code: 'SERVER_ERROR',
-          message: parsed.error || `Error HTTP ${response.status} al procesar con IA.`,
+          message: `Error HTTP ${response.status} al procesar con IA.`,
+          source: 'backend',
+          status: response.status,
+          endpoint,
         },
       };
     }
 
     return parsed.data;
   } catch (error) {
+    const isNetwork = error instanceof TypeError || (error instanceof Error && (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError')));
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: error instanceof Error ? error.message : `No se pudo conectar con el servidor backend (${API_CONFIG.BASE_URL}).`,
+        code: isNetwork ? 'NETWORK_ERROR' : 'CLIENT_ERROR',
+        message: isNetwork
+          ? `No fue posible conectar con el servidor (${API_CONFIG.BASE_URL}). Verifica tu conexión o que el backend esté activo.`
+          : (error instanceof Error ? error.message : 'Error inesperado al emitir la solicitud.'),
+        source: isNetwork ? 'network' : 'frontend',
+        endpoint,
       },
     };
   }
@@ -131,153 +218,147 @@ export interface RemoteHistoryItem {
   createdAt: string;
 }
 
-export async function fetchRemoteHistory(limit = 20, offset = 0): Promise<{ success: boolean; data?: { items: RemoteHistoryItem[]; total: number; limit: number; offset: number }; error?: { message?: string } }> {
+export async function fetchRemoteHistory(limit = 20, offset = 0): Promise<{ success: boolean; data?: { items: RemoteHistoryItem[]; total: number; limit: number; offset: number }; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.HISTORY;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HISTORY}?limit=${limit}&offset=${offset}`);
-    const parsed = await safeParseJson<{ success: boolean; data: any; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}?limit=${limit}&offset=${offset}`);
+    const parsed = await safeParseResponse<{ success: boolean; data: { items: RemoteHistoryItem[]; total: number; limit: number; offset: number } }>(response, endpoint);
+    if (parsed.ok && parsed.data) {
+      return parsed.data;
+    }
+    return { success: false, error: parsed.error };
   } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
+    return {
+      success: false,
+      error: {
+        code: 'NETWORK_ERROR',
+        message: 'No se pudo cargar el historial desde el servidor.',
+        source: 'network',
+        endpoint,
+      },
+    };
+  }
+}
+
+export async function clearRemoteHistory(): Promise<{ success: boolean; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.HISTORY;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+    });
+    const parsed = await safeParseResponse<{ success: boolean }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al limpiar historial.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function deleteRemoteHistoryItem(id: string): Promise<{ success: boolean; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.HISTORY}/${id}`;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+    });
+    const parsed = await safeParseResponse<{ success: boolean }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al eliminar registro.', source: 'network', endpoint },
+    };
+  }
+}
+
+export interface RemoteLibraryItem {
+  id: string;
+  title: string;
+  content: string;
+  categoryId: string;
+  category?: { name: string };
+  categoryName?: string;
+  categoryIcon?: string;
+  isShared: boolean;
+  isFavorite: boolean;
+  createdAt: string;
+}
+
+export async function fetchRemoteLibrary(): Promise<{ success: boolean; data?: RemoteLibraryItem[]; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.LIBRARY;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`);
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteLibraryItem[] }>(response, endpoint);
+    if (parsed.ok && parsed.data) {
+      return parsed.data;
+    }
+    return { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al obtener biblioteca.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function createRemoteLibraryItem(item: { title: string; content: string; categoryId: string; isShared?: boolean; isFavorite?: boolean }): Promise<{ success: boolean; data?: RemoteLibraryItem; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.LIBRARY;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteLibraryItem }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al guardar en biblioteca.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function updateRemoteLibraryItem(id: string, item: { title?: string; content?: string; categoryId?: string; isShared?: boolean; isFavorite?: boolean }): Promise<{ success: boolean; data?: RemoteLibraryItem; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.LIBRARY}/${id}`;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      body: JSON.stringify(item),
+    });
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteLibraryItem }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al actualizar biblioteca.', source: 'network', endpoint },
+    };
   }
 }
 
 export interface RemoteCategory {
   id: string;
   name: string;
-  createdAt: string;
+  description: string | null;
+  icon?: string;
+  itemCount: number;
 }
 
-let cachedCategories: RemoteCategory[] | null = null;
-let categoriesCacheTime = 0;
-const CATEGORIES_TTL_MS = 5 * 60 * 1000; // 5 minutos
-
-export async function fetchRemoteCategories(forceRefresh = false): Promise<{ success: boolean; data?: RemoteCategory[]; error?: { message?: string } }> {
-  if (!forceRefresh && cachedCategories && Date.now() - categoriesCacheTime < CATEGORIES_TTL_MS) {
-    return { success: true, data: cachedCategories };
-  }
-
+export async function fetchRemoteCategories(): Promise<{ success: boolean; data?: RemoteCategory[]; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.CATEGORIES;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CATEGORIES}`);
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteCategory[]; error?: { message?: string } }>(response);
-
-    if (parsed.data && parsed.data.success && Array.isArray(parsed.data.data)) {
-      cachedCategories = parsed.data.data;
-      categoriesCacheTime = Date.now();
-      return { success: true, data: cachedCategories };
-    }
-
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
-  }
-}
-
-export interface RemoteLibraryItem {
-  id: string;
-  userId: string | null;
-  categoryId: string;
-  title: string;
-  content: string;
-  isShared: boolean;
-  isFavorite: boolean;
-  createdAt: string;
-  updatedAt: string;
-  category: {
-    id: string;
-    name: string;
-  };
-}
-
-export async function fetchRemoteLibrary(params?: { categoryId?: string; isShared?: boolean; isFavorite?: boolean }): Promise<{ success: boolean; data?: RemoteLibraryItem[]; error?: { message?: string } }> {
-  try {
-    const query = new URLSearchParams();
-    if (params?.categoryId) query.append('categoryId', params.categoryId);
-    if (params?.isShared !== undefined) query.append('isShared', String(params.isShared));
-    if (params?.isFavorite !== undefined) query.append('isFavorite', String(params.isFavorite));
-
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LIBRARY}?${query.toString()}`);
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteLibraryItem[]; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
-  }
-}
-
-export async function createRemoteLibraryItem(item: { title: string; content: string; categoryId: string; isShared?: boolean; isFavorite?: boolean }): Promise<{ success: boolean; data?: RemoteLibraryItem; error?: { message?: string } }> {
-  try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LIBRARY}`, {
-      method: 'POST',
-      body: JSON.stringify(item),
-    });
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteLibraryItem; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
-  }
-}
-
-export async function updateRemoteLibraryItem(id: string, updates: { title?: string; content?: string; categoryId?: string; isShared?: boolean; isFavorite?: boolean }): Promise<{ success: boolean; data?: RemoteLibraryItem; error?: { message?: string } }> {
-  try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LIBRARY}/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates),
-    });
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteLibraryItem; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
-  }
-}
-
-export async function deleteRemoteLibraryItem(id: string): Promise<{ success: boolean; data?: { message: string }; error?: { message?: string } }> {
-  try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LIBRARY}/${id}`, {
-      method: 'DELETE',
-    });
-    const parsed = await safeParseJson<{ success: boolean; data: { message: string }; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
-  }
-}
-
-export async function updatePrivacyPreferences(saveAiHistory: boolean): Promise<{ success: boolean; data?: any; error?: { message?: string } }> {
-  try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}/api/v1/auth/privacy`, {
-      method: 'PATCH',
-      body: JSON.stringify({ saveAiHistory }),
-    });
-    const parsed = await safeParseJson<{ success: boolean; data: any; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red' } };
-  }
-}
-
-export async function testBackendConnection(text = 'Prueba de conexión desde Side Panel'): Promise<TestApiResponse> {
-  try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TEST}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text }),
-    });
-
-    const parsed = await safeParseJson<TestApiResponse>(response);
-    return parsed.data || { success: false, error: { code: 'HTTP_ERROR', message: parsed.error || `HTTP ${response.status}` } };
-  } catch (error) {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`);
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteCategory[] }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
     return {
       success: false,
-      error: {
-        code: 'NETWORK_ERROR',
-        message: error instanceof Error ? error.message : `No se pudo conectar con el servidor backend (${API_CONFIG.BASE_URL}).`,
-      },
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al obtener categorías.', source: 'network', endpoint },
     };
   }
 }
 
-export interface RemoteQuickText {
+export interface QuickTextBackendItem {
   id: string;
   userId: string;
   title: string;
@@ -291,51 +372,68 @@ export interface RemoteQuickText {
   updatedAt: string;
 }
 
-export async function fetchRemoteQuickTexts(): Promise<{ success: boolean; data?: RemoteQuickText[]; error?: { message?: string } }> {
+export type RemoteQuickText = QuickTextBackendItem;
+
+export async function fetchRemoteQuickTexts(): Promise<{ success: boolean; data?: QuickTextBackendItem[]; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.QUICK_TEXTS;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}`);
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteQuickText[]; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al obtener textos rápidos.' } };
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`);
+    const parsed = await safeParseResponse<{ success: boolean; data: QuickTextBackendItem[] }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al obtener textos rápidos.', source: 'network', endpoint },
+    };
   }
 }
 
-export async function createRemoteQuickText(item: { title: string; header: string; body: string; solution?: string; isShared?: boolean }): Promise<{ success: boolean; data?: RemoteQuickText; error?: { message?: string } }> {
+export async function createRemoteQuickText(item: { title: string; header: string; body: string; solution?: string; isShared?: boolean }): Promise<{ success: boolean; data?: QuickTextBackendItem; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.QUICK_TEXTS;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}`, {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
       method: 'POST',
       body: JSON.stringify(item),
     });
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteQuickText; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al crear texto rápido.' } };
+    const parsed = await safeParseResponse<{ success: boolean; data: QuickTextBackendItem }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al crear texto rápido.', source: 'network', endpoint },
+    };
   }
 }
 
-export async function updateRemoteQuickText(id: string, updates: { title?: string; header?: string; body?: string; solution?: string; isShared?: boolean }): Promise<{ success: boolean; data?: RemoteQuickText; error?: { message?: string } }> {
+export async function updateRemoteQuickText(id: string, item: { title?: string; header?: string; body?: string; solution?: string; isShared?: boolean }): Promise<{ success: boolean; data?: QuickTextBackendItem; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.QUICK_TEXTS}/${id}`;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates),
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      body: JSON.stringify(item),
     });
-    const parsed = await safeParseJson<{ success: boolean; data: RemoteQuickText; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al actualizar texto rápido.' } };
+    const parsed = await safeParseResponse<{ success: boolean; data: QuickTextBackendItem }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al actualizar texto rápido.', source: 'network', endpoint },
+    };
   }
 }
 
-export async function deleteRemoteQuickText(id: string): Promise<{ success: boolean; data?: { message: string }; error?: { message?: string } }> {
+export async function deleteRemoteQuickText(id: string): Promise<{ success: boolean; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.QUICK_TEXTS}/${id}`;
   try {
-    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QUICK_TEXTS}/${id}`, {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
       method: 'DELETE',
     });
-    const parsed = await safeParseJson<{ success: boolean; data: { message: string }; error?: { message?: string } }>(response);
-    return parsed.data || { success: false, error: { message: parsed.error } };
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'Error de red al eliminar texto rápido.' } };
+    const parsed = await safeParseResponse<{ success: boolean }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al eliminar texto rápido.', source: 'network', endpoint },
+    };
   }
 }
-

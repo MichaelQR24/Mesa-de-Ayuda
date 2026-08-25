@@ -217,6 +217,18 @@
                 <span id="paraphrase-hint-text" class="option-hint-text">Reescribe el texto manteniendo claramente su significado.</span>
               </div>
 
+              <!-- Selector Dinámico de Estilo de Parafraseo (Solo Parafrasear) -->
+              <div id="group-paraphrase-style" class="option-field hidden">
+                <label for="select-paraphrase-style" class="field-sublabel">Estilo:</label>
+                <select id="select-paraphrase-style" class="app-select">
+                  <option value="helpdesk" selected>🛠️ Mesa de Ayuda</option>
+                  <option value="formal">👔 Formal</option>
+                  <option value="institutional">🏢 Institucional</option>
+                  <option value="direct">⚡ Directo</option>
+                </select>
+                <span id="paraphrase-style-hint-text" class="option-hint-text">Breve y operativo para comunicaciones de soporte.</span>
+              </div>
+
               <!-- Selector Dinámico de Estilo / Tono (Profesionalizar / Responder) -->
               <div id="group-tone" class="option-field hidden">
                 <label id="label-tone" for="select-tone" class="field-sublabel">Estilo de redacción:</label>

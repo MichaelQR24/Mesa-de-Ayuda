@@ -7,11 +7,24 @@ export const aiProcessSchema = z.object({
     .min(1, { message: 'El texto debe contener al menos 1 carácter útil' })
     .max(5000, { message: 'El texto no puede exceder 5000 caracteres' }),
   action: z.enum(['correct', 'paraphrase', 'professionalize', 'summarize', 'reply'], {
-    errorMap: () => ({ message: 'Acción no válida. Opciones permitidas: correct, paraphrase, professionalize, summarize, reply' }),
+    errorMap: () => ({
+      message: 'Acción no válida. Opciones permitidas: correct, paraphrase, professionalize, summarize, reply',
+    }),
   }),
   tone: z
-    .enum(['professional', 'formal', 'friendly', 'technical', 'casual'], {
-      errorMap: () => ({ message: 'Tono no válido. Opciones: professional, formal, friendly, technical, casual' }),
+    .enum([
+      'professional',
+      'formal',
+      'friendly',
+      'technical',
+      'casual',
+      'helpdesk',
+      'institutional',
+      'direct',
+    ], {
+      errorMap: () => ({
+        message: 'Tono/Estilo no válido. Opciones: professional, formal, friendly, technical, casual, helpdesk, institutional, direct',
+      }),
     })
     .optional()
     .default('professional'),
@@ -21,6 +34,7 @@ export const aiProcessSchema = z.object({
     })
     .optional()
     .default('medium'),
+  preserveInfinitives: z.boolean().optional().default(true),
   redactSensitiveData: z.boolean().optional().default(false),
 });
 

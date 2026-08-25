@@ -15,15 +15,16 @@ async function runRealGroqTest() {
   }
 
   console.log(`🤖 Modelo configurado: ${env.GROQ_MODEL}`);
-  console.log('📝 Texto de prueba: "usuario no puede ingresar al sistema"');
-  console.log('🎯 Acción: professionalize (Profesionalizar)\n');
+  console.log('📝 Texto de prueba: "estimado emerson por favor apoyar con la configuracion de una laptop"');
+  console.log('🎯 Acción: paraphrase (Parafrasear) | Estilo: helpdesk (Mesa de Ayuda)\n');
 
   try {
     const startTime = Date.now();
     const result = await aiService.processText({
-      text: 'usuario no puede ingresar al sistema',
-      action: 'professionalize',
-      tone: 'professional',
+      text: 'estimado emerson por favor apoyar con la configuracion de una laptop',
+      action: 'paraphrase',
+      tone: 'helpdesk',
+      paraphraseLevel: 'medium',
     });
     const totalTime = Date.now() - startTime;
 

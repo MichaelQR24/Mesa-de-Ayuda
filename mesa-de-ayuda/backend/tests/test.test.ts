@@ -55,11 +55,12 @@ describe('Rutas inexistentes (404)', () => {
     const response = await request(app).get('/ruta-que-no-existe');
 
     expect(response.status).toBe(404);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       success: false,
       error: {
         code: 'NOT_FOUND',
         message: 'Ruta no encontrada',
+        source: 'backend',
       },
     });
   });

@@ -2,6 +2,8 @@ export type ToneOption = 'profesional' | 'formal' | 'amable' | 'tecnico' | 'casu
 
 export type ParaphraseLevel = 'suave' | 'medio' | 'completo';
 
+export type ParaphraseStyle = 'helpdesk' | 'formal' | 'institutional' | 'direct';
+
 export type ActionType = 'corregir' | 'parafrasear' | 'profesionalizar' | 'resumir' | 'responder';
 
 export type NavTab = 'asistente' | 'textos-rapidos' | 'historial' | 'guardados' | 'configuracion';
@@ -28,7 +30,7 @@ export interface HistoryItem {
   originalText: string;
   resultText: string;
   timestamp: number;
-  tone?: ToneOption;
+  tone?: ToneOption | string;
   paraphraseLevel?: ParaphraseLevel;
 }
 
