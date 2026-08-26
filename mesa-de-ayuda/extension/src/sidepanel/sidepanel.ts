@@ -9,6 +9,7 @@ import { loginView } from './components/login-view';
 import { changePasswordView } from './components/change-password-view';
 import { assistantView } from './components/assistant-view';
 import { quickTextsView } from './components/quick-texts-view';
+import { guidesView } from './components/guides-view';
 import { historyView } from './components/history-view';
 import { savedView } from './components/saved-view';
 import { settingsView } from './components/settings-view';
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await settingsView.init();
     await assistantView.init();
     quickTextsView.init();
+    guidesView.init();
     await historyView.init();
     await savedView.init();
 
@@ -44,6 +46,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           break;
         case 'textos-rapidos':
           quickTextsView.refresh().catch(console.error);
+          break;
+        case 'guias':
+          guidesView.refresh().catch(console.error);
           break;
         case 'historial':
           historyView.refresh().catch(console.error);

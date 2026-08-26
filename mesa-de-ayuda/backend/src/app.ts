@@ -20,6 +20,7 @@ import sessionAdminRoutes from './routes/session-admin.routes.js';
 import libraryAdminRoutes from './routes/library-admin.routes.js';
 import systemAdminRoutes from './routes/system-admin.routes.js';
 import { quickTextRoutes } from './routes/quick-text.routes.js';
+import { guideRoutes } from './routes/guide.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -92,8 +93,9 @@ export const createApp = (): Express => {
     })
   );
 
-  // 4. Body Parser con límite seguro de 50kb
-  app.use(express.json({ limit: '50kb' }));
+  // 4. Body Parser con límite holgado de 10MB para soportar payloads JSON con imágenes Base64 de hasta 5 MB reales
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // 5. Logger estructurado, minimalista y seguro (sin volcar passwords, tokens ni payloads)
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -123,6 +125,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/admin/sessions', sessionAdminRoutes);
   app.use('/api/v1/admin/library', libraryAdminRoutes);
   app.use('/api/v1/admin/system', systemAdminRoutes);
+  app.use('/api/v1/admin/guides', guideRoutes);
 
   // Rutas operativas
   app.use('/api/v1/test', testRoutes);
@@ -131,6 +134,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/library', libraryRoutes);
   app.use('/api/v1/categories', categoryRoutes);
   app.use('/api/v1/quick-texts', quickTextRoutes);
+  app.use('/api/v1/guides', guideRoutes);
 
   // 8. Manejo de 404 para rutas inexistentes
   app.use(notFoundHandler);

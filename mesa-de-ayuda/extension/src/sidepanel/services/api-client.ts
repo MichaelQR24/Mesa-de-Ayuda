@@ -437,3 +437,96 @@ export async function deleteRemoteQuickText(id: string): Promise<{ success: bool
     };
   }
 }
+
+export interface RemoteGuide {
+  id: string;
+  title: string;
+  description: string;
+  keywords: string[];
+  imagePath: string;
+  imageUrl: string;
+  createdById: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchRemoteGuides(query?: string): Promise<{ success: boolean; data?: RemoteGuide[]; error?: StructuredApiError }> {
+  const queryParam = query ? `?q=${encodeURIComponent(query)}` : '';
+  const endpoint = `${API_CONFIG.ENDPOINTS.GUIDES}${queryParam}`;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`);
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteGuide[] }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al obtener las guías visuales.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function fetchRemoteGuideById(id: string): Promise<{ success: boolean; data?: RemoteGuide; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.GUIDES}/${id}`;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`);
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteGuide }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al cargar la guía visual.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function createRemoteGuide(item: { title: string; description?: string; keywords: string[]; imageBase64: string }): Promise<{ success: boolean; data?: RemoteGuide; error?: StructuredApiError }> {
+  const endpoint = API_CONFIG.ENDPOINTS.ADMIN_GUIDES;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteGuide }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al crear la guía visual.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function updateRemoteGuide(id: string, item: { title?: string; description?: string; keywords?: string[]; imageBase64?: string }): Promise<{ success: boolean; data?: RemoteGuide; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.ADMIN_GUIDES}/${id}`;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'PATCH',
+      body: JSON.stringify(item),
+    });
+    const parsed = await safeParseResponse<{ success: boolean; data: RemoteGuide }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al actualizar la guía visual.', source: 'network', endpoint },
+    };
+  }
+}
+
+export async function deleteRemoteGuide(id: string): Promise<{ success: boolean; error?: StructuredApiError }> {
+  const endpoint = `${API_CONFIG.ENDPOINTS.ADMIN_GUIDES}/${id}`;
+  try {
+    const response = await authenticatedFetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+    });
+    const parsed = await safeParseResponse<{ success: boolean }>(response, endpoint);
+    return parsed.ok && parsed.data ? parsed.data : { success: false, error: parsed.error };
+  } catch {
+    return {
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: 'Error de red al eliminar la guía visual.', source: 'network', endpoint },
+    };
+  }
+}
+

@@ -3,15 +3,15 @@ import { cpSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, st
 import { join, resolve } from 'path';
 import { createHash } from 'crypto';
 
-console.log('🚀 Iniciando proceso de Release Oficial — Mesa de Ayuda v1.0.0\n');
+console.log('🚀 Iniciando proceso de Release Oficial — Mesa de Ayuda v1.1.0\n');
 
 const extensionDir = resolve('.');
 const workspaceDir = resolve('..');
 const releaseDir = join(workspaceDir, 'release');
-const versionDir = join(releaseDir, 'mesa-de-ayuda-v1.0.0');
+const versionDir = join(releaseDir, 'mesa-de-ayuda-v1.1.0');
 const distDir = join(extensionDir, 'dist');
-const zipPath = join(releaseDir, 'mesa-de-ayuda-v1.0.0.zip');
-const shaPath = join(releaseDir, 'mesa-de-ayuda-v1.0.0.sha256');
+const zipPath = join(releaseDir, 'mesa-de-ayuda-v1.1.0.zip');
+const shaPath = join(releaseDir, 'mesa-de-ayuda-v1.1.0.sha256');
 
 // 1. Limpiar carpetas previas
 console.log('1. Limpiando directorios de release previos...');
@@ -22,9 +22,12 @@ mkdirSync(versionDir, { recursive: true });
 
 // 2. Compilación limpia para producción
 console.log('2. Ejecutando compilación limpia con Vite en modo production...');
+if (statSync(distDir, { throwIfNoEntry: false })) {
+  rmSync(distDir, { recursive: true, force: true });
+}
 execSync('npm run build', { stdio: 'inherit', cwd: extensionDir });
 
-// 3. Copiar dist/ a release/mesa-de-ayuda-v1.0.0/
+// 3. Copiar dist/ a release/mesa-de-ayuda-v1.1.0/
 console.log('3. Copiando artefactos a la carpeta de release final...');
 cpSync(distDir, versionDir, { recursive: true });
 
@@ -37,9 +40,9 @@ try {
 
 const releaseInfo = `=====================================================
 MESA DE AYUDA - ASISTENTE DE SOPORTE TÉCNICO
-Release Oficial v1.0.0 (Manifest V3)
+Release Oficial v1.1.0 (Manifest V3)
 =====================================================
-Versión: 1.0.0
+Versión: 1.1.0
 Fecha de Compilación: ${new Date().toISOString()}
 Git Commit: ${gitCommit}
 Backend Cloud: https://mesa-de-ayuda-j6uw.onrender.com
@@ -50,11 +53,11 @@ Requisitos del Usuario: Google Chrome + Internet
 writeFileSync(join(versionDir, 'RELEASE-INFO.txt'), releaseInfo, 'utf-8');
 
 const leemeContent = `=====================================================
-MESA DE AYUDA - GUÍA RÁPIDA DE INSTALACIÓN (v1.0.0)
+MESA DE AYUDA - GUÍA RÁPIDA DE INSTALACIÓN (v1.1.0)
 =====================================================
 
 1. GUARDA ESTA CARPETA
-   Guarda esta carpeta ("mesa-de-ayuda-v1.0.0") en una ubicación
+   Guarda esta carpeta ("mesa-de-ayuda-v1.1.0") en una ubicación
    permanente de tu PC (por ejemplo en Documentos o en tu carpeta de usuario).
    ¡IMPORTANTE: No muevas ni borres esta carpeta después de instalarla!
 
@@ -68,7 +71,7 @@ MESA DE AYUDA - GUÍA RÁPIDA DE INSTALACIÓN (v1.0.0)
 4. CARGAR LA EXTENSIÓN
    Haz clic en el botón "Cargar extensión sin empaquetar" (o "Cargar descomprimida")
    en la esquina superior izquierda.
-   Selecciona exactamente esta carpeta ("mesa-de-ayuda-v1.0.0").
+   Selecciona exactamente esta carpeta ("mesa-de-ayuda-v1.1.0").
 
 5. FIJAR EL ICONO
    Haz clic en el icono de la pieza de rompecabezas (Extensiones) en la barra de Chrome
@@ -93,17 +96,18 @@ function scanDir(dir: string) {
     } else if (file.endsWith('.js') || file.endsWith('.html') || file.endsWith('.json')) {
       const content = readFileSync(fullPath, 'utf-8');
 
-      // Escaneo de secretos reales (no regexes de validación de SensitiveDataGuard)
+      // Escaneo de secretos reales
       const realGroqKey = /gsk_[a-zA-Z0-9]{25,}/.test(content);
       const realOpenAiKey = /sk-[a-zA-Z0-9]{30,}/.test(content);
       const realDbUrl = /postgres(?:ql)?:\/\/[a-zA-Z0-9_]+:[^@]+@/.test(content);
       const realJwtSecret = /JWT_ACCESS_SECRET\s*=\s*[a-zA-Z0-9_]{10,}/.test(content);
+      const realServiceRole = /SUPABASE_SERVICE_ROLE_KEY|service_role/.test(content);
 
-      if (realGroqKey || realOpenAiKey || realDbUrl || realJwtSecret) {
+      if (realGroqKey || realOpenAiKey || realDbUrl || realJwtSecret || realServiceRole) {
         throw new Error(`🚨 ERROR CRÍTICO: Se detectó un secreto real expuesto en ${file}`);
       }
 
-      // Escaneo de localhost
+      // Escaneo de localhost en archivos que no sean manifest
       if (content.includes('localhost:3000') && !file.endsWith('.json')) {
         console.warn(`⚠️ Advertencia: referencia a localhost detectada en ${file}`);
       }
@@ -116,14 +120,14 @@ console.log('✅ Escaneo de seguridad superado: 0 secretos detectados.');
 // 6. Generar archivo ZIP y Checksum SHA-256
 console.log('6. Generando archivo ZIP y Checksum SHA-256...');
 try {
-  execSync(`powershell -command "Compress-Archive -Path '${versionDir}\\*' -DestinationPath '${zipPath}' -Force"`, { cwd: releaseDir });
+  execSync(`powershell -command "Compress-Archive -Path '${versionDir}' -DestinationPath '${zipPath}' -Force"`, { cwd: releaseDir });
   const zipBuffer = readFileSync(zipPath);
   const sha256 = createHash('sha256').update(zipBuffer).digest('hex');
-  writeFileSync(shaPath, `${sha256}  mesa-de-ayuda-v1.0.0.zip\n`, 'utf-8');
+  writeFileSync(shaPath, `${sha256}  mesa-de-ayuda-v1.1.0.zip\n`, 'utf-8');
   console.log(`📦 Paquete ZIP creado: ${zipPath}`);
   console.log(`🔑 SHA-256: ${sha256}`);
 } catch (err) {
   console.warn('Nota: No se pudo comprimir ZIP automáticamente, la carpeta unpacked está lista.');
 }
 
-console.log('\n🎉 ¡Release v1.0.0 generado con éxito en release/mesa-de-ayuda-v1.0.0!');
+console.log('\n🎉 ¡Release v1.1.0 generado con éxito en release/mesa-de-ayuda-v1.1.0!');

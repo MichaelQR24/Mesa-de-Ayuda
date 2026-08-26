@@ -6,7 +6,7 @@ export type ParaphraseStyle = 'helpdesk' | 'formal' | 'institutional' | 'direct'
 
 export type ActionType = 'corregir' | 'parafrasear' | 'profesionalizar' | 'resumir' | 'responder';
 
-export type NavTab = 'asistente' | 'textos-rapidos' | 'historial' | 'guardados' | 'configuracion';
+export type NavTab = 'asistente' | 'textos-rapidos' | 'guias' | 'historial' | 'guardados' | 'configuracion';
 
 export interface QuickTextItem {
   id: string;

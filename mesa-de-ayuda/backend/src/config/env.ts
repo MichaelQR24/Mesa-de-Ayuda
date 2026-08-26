@@ -17,6 +17,9 @@ const envSchema = z.object({
   AI_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000), // 1 minuto
   AI_RATE_LIMIT_MAX: z.coerce.number().default(20), // 20 solicitudes por minuto
   AI_HISTORY_RETENTION_DAYS: z.coerce.number().default(90),
+  SUPABASE_URL: z.string().default(''),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
+  SUPABASE_STORAGE_BUCKET: z.string().default('helpdesk-guides'),
 });
 
 const parseEnv = () => {

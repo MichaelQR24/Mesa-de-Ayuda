@@ -119,7 +119,33 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     return;
   }
 
-  // 4. Manejo de errores controlados con código personalizado
+  // 4. Manejo de Payload / Entity Too Large (body-parser / express.json o límites de subida)
+  if (
+    (err && typeof err === 'object' && ((err as any).type === 'entity.too.large' || (err as any).status === 413 || (err as any).statusCode === 413)) ||
+    (err && typeof err === 'object' && (err as any).code === 'PAYLOAD_TOO_LARGE') ||
+    (err instanceof Error && err.message.toLowerCase().includes('entity too large'))
+  ) {
+    const source: ErrorSource = 'validation';
+    const code = 'PAYLOAD_TOO_LARGE';
+    const message = err.message && !err.message.toLowerCase().includes('request entity too large')
+      ? err.message
+      : 'La imagen supera el tamaño máximo permitido de 5 MB.';
+
+    console.warn(`[${new Date().toISOString()}] [${requestId || 'no-id'}] [${userId}] WARN ${req.method} ${req.originalUrl} -> status=413 code=${code} source=${source}`);
+
+    res.status(413).json({
+      success: false,
+      error: {
+        code,
+        message,
+        source,
+        requestId,
+      },
+    });
+    return;
+  }
+
+  // 5. Manejo de errores controlados con código personalizado
   if (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string') {
     const customErr = err as { code: string; message: string; statusCode?: number; source?: ErrorSource };
     const statusCode = customErr.statusCode || 500;

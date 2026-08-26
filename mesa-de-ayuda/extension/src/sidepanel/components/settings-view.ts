@@ -3,6 +3,7 @@ import { AppSettings, ParaphraseLevel, ThemeOption, ToneOption } from '../types'
 import { assistantView } from './assistant-view';
 import { showToast } from './toast';
 import { testBackendConnection } from '../services/api-client';
+import { API_CONFIG } from '../config/api';
 
 export class SettingsView {
   private toneSelect!: HTMLSelectElement;
@@ -42,7 +43,7 @@ export class SettingsView {
 
     this.testBackendBtn.disabled = true;
     this.backendStatusBox.className = 'backend-status-box';
-    this.backendStatusBox.textContent = 'Enviando solicitud POST a http://localhost:3000/api/v1/test...';
+    this.backendStatusBox.textContent = `Enviando solicitud POST a ${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TEST}...`;
 
     const result = await testBackendConnection('Prueba de conexión desde Side Panel');
 

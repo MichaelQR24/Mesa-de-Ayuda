@@ -58,6 +58,7 @@ model User {
   aiHistories  AiHistory[]
   libraryItems LibraryItem[]
   quickTexts   QuickText[]
+  visualGuides VisualGuide[]
   sessions     AuthSession[]
   auditLogs    AuditLog[]
 
@@ -174,3 +175,21 @@ model QuickText {
   @@index([createdAt])
   @@map("quick_texts")
 }
+
+model VisualGuide {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @default("") @db.Text
+  keywords    String[]
+  imagePath   String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+  @@index([createdAt])
+  @@map("visual_guides")
+}
+

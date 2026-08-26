@@ -1576,36 +1576,283 @@ body {
   border: 1px solid var(--color-action-border);
 }
 
-.card-shared {
-  border-left: 3px solid var(--color-action);
-}
-
-/* Checkbox en Formulario Modal */
-.option-field-checkbox {
-  margin-top: 2px;
-  padding: 6px 0;
-}
-
-.checkbox-container {
+/* Selector de Visibilidad con Radio Cards */
+.visibility-radio-group {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  cursor: pointer;
-  user-select: none;
+  margin-top: 4px;
 }
 
-.checkbox-container input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+.radio-card-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.radio-card-option:hover {
+  border-color: var(--color-action-border);
+  background-color: var(--bg-card);
+}
+
+.radio-card-option input[type="radio"] {
+  margin-top: 3px;
   accent-color: var(--color-action);
   cursor: pointer;
 }
 
-.checkbox-label-text {
+.radio-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radio-card-title {
   font-size: 0.83rem;
   font-weight: 600;
   color: var(--text-primary);
 }
+
+.radio-card-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   Sección: Guías Visuales (Visual Guides)
+   ========================================================================== */
+.guides-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guide-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.guide-card:hover {
+  border-color: var(--color-action-border);
+  box-shadow: var(--shadow-md);
+}
+
+.guide-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #060913;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.guide-thumb-wrapper:hover .guide-thumbnail {
+  transform: scale(1.03);
+}
+
+.guide-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 17, 32, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  backdrop-filter: blur(2px);
+}
+
+.guide-thumb-wrapper:hover .guide-thumb-overlay {
+  opacity: 1;
+}
+
+.guide-card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.guide-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.guide-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.guide-tag-chip {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--color-action-hover);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.guide-card-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.guide-card-footer {
+  padding: 10px 14px;
+  background-color: var(--bg-subtle);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guide-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Dropzone de Imagen en Modal de Guía */
+.guide-dropzone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-subtle);
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.guide-dropzone:hover,
+.guide-dropzone.dropzone-active {
+  border-color: var(--color-action);
+  background-color: var(--color-action-light);
+}
+
+.guide-dropzone-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dropzone-icon {
+  font-size: 1.6rem;
+  margin-bottom: 2px;
+}
+
+.dropzone-main-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dropzone-sub-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.guide-preview-container {
+  position: relative;
+  width: 100%;
+  max-height: 200px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #060913;
+}
+
+.guide-image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.btn-remove-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(239, 68, 68, 0.85);
+  color: #ffffff;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-remove-preview:hover {
+  transform: scale(1.1);
+  background-color: #dc2626;
+}
+
+/* ==========================================================================
+   Mejoras Responsivas Anti-Desborde (320px+)
+   ========================================================================== */
+.app-wrapper,
+.main-content,
+.view-panel,
+.card-section,
+.modal-card {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.quick-text-card-title,
+.guide-card-title,
+.view-heading,
+.view-subheading,
+.toast-message {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 
 
 

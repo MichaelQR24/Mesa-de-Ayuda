@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         sidepanel: resolve(rootDir, 'src/sidepanel/index.html'),
         admin: resolve(rootDir, 'src/admin/index.html'),
+        guideViewer: resolve(rootDir, 'src/guide-viewer/index.html'),
         'service-worker': resolve(rootDir, 'src/background/service-worker.ts'),
         content: resolve(rootDir, 'src/content/content-script.ts'),
       },

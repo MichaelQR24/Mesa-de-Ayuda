@@ -23,7 +23,8 @@ export class QuickTextsView {
   private inputHeader!: HTMLTextAreaElement;
   private inputBody!: HTMLTextAreaElement;
   private inputSolution!: HTMLTextAreaElement;
-  private inputIsShared!: HTMLInputElement;
+  private radioPrivate!: HTMLInputElement;
+  private radioShared!: HTMLInputElement;
   private btnCancelModal!: HTMLButtonElement;
   private btnCloseModal!: HTMLButtonElement;
   private btnSubmitModal!: HTMLButtonElement;
@@ -57,7 +58,8 @@ export class QuickTextsView {
     this.inputHeader = document.getElementById('quick-text-header') as HTMLTextAreaElement;
     this.inputBody = document.getElementById('quick-text-body') as HTMLTextAreaElement;
     this.inputSolution = document.getElementById('quick-text-solution') as HTMLTextAreaElement;
-    this.inputIsShared = document.getElementById('quick-text-is-shared') as HTMLInputElement;
+    this.radioPrivate = document.getElementById('qt-vis-private') as HTMLInputElement;
+    this.radioShared = document.getElementById('qt-vis-shared') as HTMLInputElement;
     this.btnCancelModal = document.getElementById('btn-cancel-quick-text') as HTMLButtonElement;
     this.btnCloseModal = document.getElementById('btn-close-quick-text-modal') as HTMLButtonElement;
     this.btnSubmitModal = document.getElementById('btn-submit-quick-text') as HTMLButtonElement;
@@ -423,8 +425,9 @@ export class QuickTextsView {
     if (this.inputSolution) {
       this.inputSolution.value = '';
     }
-    if (this.inputIsShared) {
-      this.inputIsShared.checked = false;
+    if (this.radioPrivate && this.radioShared) {
+      this.radioPrivate.checked = true;
+      this.radioShared.checked = false;
     }
     this.modal.classList.remove('hidden');
     this.inputTitle.focus();
@@ -440,8 +443,14 @@ export class QuickTextsView {
     if (this.inputSolution) {
       this.inputSolution.value = item.solution || '';
     }
-    if (this.inputIsShared) {
-      this.inputIsShared.checked = Boolean(item.isShared);
+    if (this.radioPrivate && this.radioShared) {
+      if (item.isShared) {
+        this.radioShared.checked = true;
+        this.radioPrivate.checked = false;
+      } else {
+        this.radioPrivate.checked = true;
+        this.radioShared.checked = false;
+      }
     }
     this.modal.classList.remove('hidden');
     this.inputTitle.focus();
@@ -459,7 +468,7 @@ export class QuickTextsView {
     const header = this.inputHeader.value.trim();
     const body = this.inputBody.value.trim();
     const solution = this.inputSolution ? this.inputSolution.value.trim() : '';
-    const isShared = this.inputIsShared ? this.inputIsShared.checked : false;
+    const isShared = this.radioShared ? this.radioShared.checked : false;
 
     if (!title || !header || !body) {
       showToast('Por favor completa los campos requeridos (Título, Cabecera y Cuerpo).', 'error');

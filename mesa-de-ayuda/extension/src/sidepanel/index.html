@@ -38,6 +38,9 @@
           <button type="button" class="nav-tab-btn" data-tab="textos-rapidos" role="tab" aria-selected="false">
             <span class="nav-tab-text">📋 Textos rápidos</span>
           </button>
+          <button type="button" class="nav-tab-btn" data-tab="guias" role="tab" aria-selected="false">
+            <span class="nav-tab-text">🖼️ Guías</span>
+          </button>
           <button type="button" class="nav-tab-btn" data-tab="historial" role="tab" aria-selected="false">
             <span class="nav-tab-text">🕘 Historial</span>
           </button>
@@ -333,6 +336,41 @@
           <div id="quick-texts-list" class="quick-texts-list-container"></div>
         </section>
 
+        <!-- 2. VISTA GUÍAS VISUALES DE PROCEDIMIENTOS -->
+        <section id="view-guias" class="view-panel">
+          <div class="panel-intro-header panel-header-flex">
+            <div>
+              <h2 class="view-heading">Guías Visuales</h2>
+              <p class="view-subheading">Consulta procedimientos visuales para resolver casos frecuentes.</p>
+            </div>
+            <button type="button" id="btn-new-guide" class="btn-primary-action btn-sm hidden">
+              <span>+ Nueva guía</span>
+            </button>
+          </div>
+
+          <div class="search-box-wrapper">
+            <input
+              type="search"
+              id="guides-search"
+              class="app-input-search"
+              placeholder="🔎 Buscar procedimiento (certificado, VPN, 2FA, clave...)"
+            />
+          </div>
+
+          <!-- Estado Vacío -->
+          <div id="guides-empty" class="empty-state-box hidden">
+            <div class="empty-state-icon">🖼️</div>
+            <h3 class="empty-state-title">No hay guías visuales disponibles.</h3>
+            <p class="empty-state-desc">Los procedimientos con capturas de pantalla para resolver incidencias aparecerán aquí.</p>
+            <button type="button" id="btn-create-first-guide" class="btn-outline btn-sm hidden">
+              <span>+ Crear primera guía</span>
+            </button>
+          </div>
+
+          <!-- Listado de Tarjetas de Guías -->
+          <div id="guides-list" class="guides-list-grid"></div>
+        </section>
+
         <!-- 3. VISTA HISTORIAL -->
         <section id="view-historial" class="view-panel">
           <div class="panel-intro-header panel-header-flex">
@@ -417,7 +455,7 @@
           <div class="card-section backend-diag-card">
             <div class="setting-item">
               <h3 class="setting-label">Diagnóstico de Conexión Backend</h3>
-              <p class="setting-description">Prueba la comunicación directa entre el Side Panel y el servidor Express local en <code>http://localhost:3000</code>.</p>
+              <p class="setting-description">Prueba la comunicación directa entre el Side Panel y el servidor de Mesa de Ayuda en la nube.</p>
             </div>
             <div class="backend-diag-actions">
               <button type="button" id="btn-test-backend" class="btn-outline btn-full">
@@ -495,12 +533,24 @@
             <span class="option-hint-text">Respuesta final, acción realizada o resolución.</span>
           </div>
 
-          <div class="option-field option-field-checkbox">
-            <label class="checkbox-container">
-              <input type="checkbox" id="quick-text-is-shared" />
-              <span class="checkbox-label-text">👥 Compartir con el equipo</span>
-            </label>
-            <span class="option-hint-text">Permite que todos los miembros del equipo puedan ver y copiar este texto.</span>
+          <div class="option-field">
+            <label class="field-label">Visibilidad del texto</label>
+            <div class="visibility-radio-group">
+              <label class="radio-card-option" for="qt-vis-private">
+                <input type="radio" name="quick-text-visibility" id="qt-vis-private" value="private" checked />
+                <div class="radio-card-content">
+                  <span class="radio-card-title">🔒 Solo para mí (Privado)</span>
+                  <span class="radio-card-desc">Solo tú podrás ver, usar y editar este texto.</span>
+                </div>
+              </label>
+              <label class="radio-card-option" for="qt-vis-shared">
+                <input type="radio" name="quick-text-visibility" id="qt-vis-shared" value="shared" />
+                <div class="radio-card-content">
+                  <span class="radio-card-title">👥 Compartir con el equipo</span>
+                  <span class="radio-card-desc">Todos los usuarios de Mesa de Ayuda podrán ver y copiar este texto.</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           <div class="modal-actions-row">
@@ -515,7 +565,7 @@
       </div>
     </div>
 
-    <!-- Modal Confirmación de Eliminación -->
+    <!-- Modal Confirmación de Eliminación de Texto Rápido -->
     <div id="modal-delete-quick-text" class="modal-overlay hidden" role="dialog" aria-modal="true">
       <div class="modal-card modal-card-sm">
         <div class="modal-header">
@@ -532,6 +582,100 @@
             Cancelar
           </button>
           <button type="button" id="btn-confirm-delete-quick-text" class="btn-danger-link btn-danger-solid">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Crear/Editar Guía Visual -->
+    <div id="modal-guide" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-guide-title" class="modal-title">Nueva Guía Visual</h3>
+          <button type="button" id="btn-close-guide-modal" class="btn-modal-close" title="Cerrar modal">&times;</button>
+        </div>
+        <form id="form-guide" class="modal-form" novalidate>
+          <div class="option-field">
+            <label for="guide-input-title" class="field-label">Título del procedimiento *</label>
+            <input
+              type="text"
+              id="guide-input-title"
+              class="app-input"
+              placeholder="Ej. Renovación de certificado digital"
+              maxlength="150"
+              required
+            />
+          </div>
+
+          <div class="option-field">
+            <label for="guide-input-keywords" class="field-label">Palabras clave / Etiquetas *</label>
+            <input
+              type="text"
+              id="guide-input-keywords"
+              class="app-input"
+              placeholder="Ej. certificado, firma digital, token, renovar (separadas por coma)"
+              required
+            />
+            <span class="option-hint-text">Permiten encontrar rápidamente este procedimiento en el buscador.</span>
+          </div>
+
+          <div class="option-field">
+            <label for="guide-input-desc" class="field-label">Descripción o notas breves (opcional)</label>
+            <textarea
+              id="guide-input-desc"
+              class="app-textarea modal-textarea-sm"
+              placeholder="Notas aclaratorias o requisitos previos para el procedimiento..."
+              rows="2"
+              maxlength="2000"
+            ></textarea>
+          </div>
+
+          <div class="option-field">
+            <label class="field-label">Captura / Imagen de la guía *</label>
+            <div id="guide-dropzone" class="guide-dropzone">
+              <input type="file" id="guide-file-input" class="hidden" accept="image/png, image/jpeg, image/webp" />
+              <div id="guide-dropzone-prompt" class="guide-dropzone-prompt">
+                <span class="dropzone-icon">📁</span>
+                <p class="dropzone-main-text">Haz clic o arrastra una imagen aquí</p>
+                <p class="dropzone-sub-text">Formatos permitidos: PNG, JPG, WEBP (Máx. 5 MB)</p>
+              </div>
+              <div id="guide-preview-container" class="guide-preview-container hidden">
+                <img id="guide-image-preview" class="guide-image-preview" src="" alt="Vista previa" />
+                <button type="button" id="btn-remove-guide-image" class="btn-remove-preview" title="Cambiar imagen">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions-row">
+            <button type="button" id="btn-cancel-guide" class="btn-outline">
+              Cancelar
+            </button>
+            <button type="submit" id="btn-submit-guide" class="btn-primary-action">
+              Guardar guía
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Confirmación de Eliminación de Guía -->
+    <div id="modal-delete-guide" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+          <h3 class="modal-title">¿Eliminar esta guía visual?</h3>
+          <button type="button" id="btn-close-delete-guide-modal" class="btn-modal-close" title="Cerrar modal">&times;</button>
+        </div>
+        <div class="modal-body-content">
+          <p class="modal-warning-text">
+            Se eliminará permanentemente la guía <strong id="delete-guide-name">este procedimiento</strong> y su archivo de imagen en la nube. Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="modal-actions-row">
+          <button type="button" id="btn-cancel-delete-guide" class="btn-outline">
+            Cancelar
+          </button>
+          <button type="button" id="btn-confirm-delete-guide" class="btn-danger-link btn-danger-solid">
             Eliminar
           </button>
         </div>

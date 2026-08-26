@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" class="theme-dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visor de Guías - Mesa de Ayuda</title>
+    <link rel="stylesheet" href="./guide-viewer.css" />
+  </head>
+  <body>
+    <div class="viewer-app-wrapper">
+      <!-- Barra Superior de Herramientas -->
+      <header class="viewer-header">
+        <div class="viewer-header-left">
+          <div class="viewer-brand-badge">🖼️ Guía Visual</div>
+          <div class="viewer-title-box">
+            <h1 id="viewer-guide-title" class="viewer-guide-title">Cargando guía...</h1>
+            <div id="viewer-tags-container" class="viewer-tags-container"></div>
+          </div>
+        </div>
+
+        <div class="viewer-toolbar">
+          <button type="button" id="btn-zoom-out" class="toolbar-btn" title="Alejar (Zoom Out)">➖</button>
+          <span id="zoom-level-text" class="zoom-level-indicator">100%</span>
+          <button type="button" id="btn-zoom-in" class="toolbar-btn" title="Acercar (Zoom In)">➕</button>
+          <div class="toolbar-divider"></div>
+          <button type="button" id="btn-fit-screen" class="toolbar-btn toolbar-btn-labeled" title="Ajustar imagen al tamaño de la pantalla">
+            <span>🔲 Ajustar</span>
+          </button>
+          <button type="button" id="btn-actual-size" class="toolbar-btn toolbar-btn-labeled" title="Tamaño original 1:1">
+            <span>1:1 Real</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" id="btn-download" class="toolbar-btn toolbar-btn-labeled" title="Descargar imagen">
+            <span>📥 Descargar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Área de Visualización Interactiva con Soporte de Zoom / Pan -->
+      <main id="viewer-canvas-container" class="viewer-canvas-container">
+        <!-- Indicador de Carga -->
+        <div id="viewer-loading" class="viewer-loading-box">
+          <div class="viewer-spinner"></div>
+          <span class="viewer-loading-text">Cargando imagen de alta resolución...</span>
+        </div>
+
+        <!-- Estado de Error -->
+        <div id="viewer-error" class="viewer-error-box hidden">
+          <div class="viewer-error-icon">⚠️</div>
+          <h2 id="viewer-error-title" class="viewer-error-title">No se pudo cargar la imagen</h2>
+          <p id="viewer-error-desc" class="viewer-error-desc">Verifica tu conexión con el servidor de Mesa de Ayuda.</p>
+        </div>
+
+        <!-- Capa de la Imagen con Zoom -->
+        <div id="image-transform-wrapper" class="image-transform-wrapper hidden">
+          <img id="viewer-main-image" class="viewer-main-image" src="" alt="Procedimiento visual de soporte técnico" />
+        </div>
+      </main>
+
+      <!-- Pie de página con descripción y atajos -->
+      <footer id="viewer-footer" class="viewer-footer hidden">
+        <p id="viewer-guide-desc" class="viewer-guide-desc"></p>
+        <div class="viewer-shortcuts-hint">
+          <span>💡 Rueda del mouse: Zoom | Arrastra la imagen para moverte</span>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="./guide-viewer.ts"></script>
+  </body>
+</html>
