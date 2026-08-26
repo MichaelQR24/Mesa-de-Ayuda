@@ -1,0 +1,6 @@
+Mesa de Ayuda
+Version: 1.1.0
+Extension ID: fmjogpnhmmmplalbhmgdglgpijhnfddl
+Build Date: 2026-08-25
+Backend Environment: Production (Render Cloud)
+Manifest: V3 (Unpacked / Fixed Key)

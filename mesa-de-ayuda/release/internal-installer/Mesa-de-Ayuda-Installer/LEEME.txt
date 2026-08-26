@@ -1,0 +1,40 @@
+================================================================
+               MESA DE AYUDA - GUIA DE USO
+================================================================
+
+QUE ES MESA DE AYUDA?
+Es un asistente inteligente de soporte tecnico que te ayuda a redactar,
+parafrasear y estructurar respuestas a usuarios con rapidez y estilo
+profesional.
+
+----------------------------------------------------------------
+COMO INSTALAR (PRIMERA VEZ):
+----------------------------------------------------------------
+1. Haz doble clic en el archivo "INSTALAR.bat".
+2. Google Chrome se abrira en la pagina de extensiones y el Explorador
+   mostrara la carpeta "extension".
+3. Si Chrome no se posiciona automaticamente en extensiones, escribe:
+   chrome://extensions  en la barra de Chrome y presiona Enter.
+4. En la esquina superior derecha de Chrome, activa el interruptor:
+   [ Modo de desarrollador ]
+5. En la esquina superior izquierda, haz clic en:
+   [ Cargar descomprimida ]
+6. Pega la ruta de la carpeta (ya esta copiada en tu portapapeles con Ctrl+V)
+   o selecciona la carpeta "extension" abierta en el Explorador.
+7. Listo! En la barra de herramientas de Chrome haz clic en el icono
+   de pieza de rompecabezas y fija "Mesa de Ayuda".
+8. Abre la extension e inicia sesion con tus credenciales de soporte.
+
+----------------------------------------------------------------
+COMO ACTUALIZAR (FUTURAS VERSIONES):
+----------------------------------------------------------------
+1. Cuando recibas una nueva version, descomprimela y reemplaza
+   la carpeta actual.
+2. Ejecuta "ACTUALIZAR.bat" y presiona el boton de recargar
+   en la tarjeta de Mesa de Ayuda dentro de Chrome.
+
+----------------------------------------------------------------
+SOPORTE Y AYUDA:
+----------------------------------------------------------------
+Si tienes dudas o inconvenientes con tus credenciales de acceso,
+comunicate con el administrador de Mesa de Ayuda.

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mesa de Ayuda</title>
+    <script type="module" crossorigin src="../../assets/sidepanel-DXiPKWz_.js"></script>
+    <link rel="stylesheet" crossorigin href="../../assets/sidepanel-DG1iIAq2.css">
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <!-- Encabezado Principal -->
+      <header class="app-header">
+        <div class="brand-container">
+          <div class="brand-icon">M</div>
+          <div class="brand-info">
+            <h1 class="brand-title">Mesa de Ayuda</h1>
+            <p class="brand-subtitle">Asistente de redacción para soporte técnico</p>
+          </div>
+        </div>
+        <div class="header-status">
+          <div id="user-profile-badge" class="user-profile-badge hidden">
+            <span id="user-display-name" class="user-name-label">Usuario</span>
+            <span id="user-role-badge" class="badge-role">USER</span>
+            <button type="button" id="btn-open-admin" class="btn-admin-icon hidden" title="Abrir Panel de Administración">🛡️</button>
+            <button type="button" id="btn-logout" class="btn-logout-icon" title="Cerrar sesión">⏻</button>
+          </div>
+          <span id="connection-status-dot" class="status-indicator-dot" title="Conectado con Mesa de Ayuda"></span>
+        </div>
+      </header>
+
+      <!-- Barra de Navegación con Desplazamiento Horizontal (visible solo con sesión activa) -->
+      <div id="nav-container-wrapper" class="nav-container-wrapper hidden">
+        <button type="button" id="btn-nav-prev" class="nav-arrow-btn" aria-label="Desplazar pestañas a la izquierda">◀</button>
+        <nav id="main-nav-bar" class="nav-bar" role="tablist" aria-label="Navegación principal">
+          <button type="button" class="nav-tab-btn active" data-tab="asistente" role="tab" aria-selected="true">
+            <span class="nav-tab-text">✨ Asistente</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="textos-rapidos" role="tab" aria-selected="false">
+            <span class="nav-tab-text">📋 Textos rápidos</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="historial" role="tab" aria-selected="false">
+            <span class="nav-tab-text">🕘 Historial</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="guardados" role="tab" aria-selected="false">
+            <span class="nav-tab-text">⭐ Guardados</span>
+          </button>
+          <button type="button" class="nav-tab-btn" data-tab="configuracion" role="tab" aria-selected="false">
+            <span class="nav-tab-text">⚙️ Configuración</span>
+          </button>
+        </nav>
+        <button type="button" id="btn-nav-next" class="nav-arrow-btn" aria-label="Desplazar pestañas a la derecha">▶</button>
+      </div>
+
+      <!-- Contenedor Principal de Vistas -->
+      <main class="main-content">
+        <!-- 0. VISTA INICIAR SESIÓN -->
+        <section id="view-login" class="view-panel">
+          <div class="card-section auth-card">
+            <div class="auth-header">
+              <div class="auth-logo-circle">🔐</div>
+              <h2 class="view-heading">Iniciar Sesión</h2>
+              <p class="view-subheading">Acceso al asistente de redacción para soporte técnico.</p>
+            </div>
+
+            <form id="form-login" class="auth-form" novalidate>
+              <div class="option-field">
+                <label for="login-email" class="field-label">Correo electrónico</label>
+                <input
+                  type="email"
+                  id="login-email"
+                  class="app-input"
+                  placeholder="usuario@dominio.com"
+                  required
+                  autocomplete="username"
+                />
+              </div>
+
+              <div class="option-field">
+                <label for="login-password" class="field-label">Contraseña</label>
+                <div class="password-input-wrapper">
+                  <input
+                    type="password"
+                    id="login-password"
+                    class="app-input"
+                    placeholder="••••••••••••"
+                    required
+                    autocomplete="current-password"
+                  />
+                  <button type="button" id="btn-toggle-password" class="btn-toggle-visibility" title="Mostrar/ocultar contraseña">👁</button>
+                </div>
+              </div>
+
+              <button type="submit" id="btn-submit-login" class="btn-primary-action btn-full btn-auth-submit">
+                <span class="btn-text">Iniciar sesión</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 0.1 VISTA CAMBIO OBLIGATORIO DE CONTRASEÑA -->
+        <section id="view-change-password" class="view-panel">
+          <div class="card-section auth-card">
+            <div class="auth-header">
+              <div class="auth-logo-circle">🔑</div>
+              <h2 class="view-heading">Cambiar Contraseña</h2>
+              <p class="view-subheading">Por motivos de seguridad, debe actualizar su contraseña temporal antes de continuar.</p>
+            </div>
+
+            <form id="form-change-password" class="auth-form" novalidate>
+              <div class="option-field">
+                <label for="current-password" class="field-label">Contraseña actual</label>
+                <input
+                  type="password"
+                  id="current-password"
+                  class="app-input"
+                  placeholder="Contraseña temporal"
+                  required
+                />
+              </div>
+
+              <div class="option-field">
+                <label for="new-password" class="field-label">Nueva contraseña</label>
+                <input
+                  type="password"
+                  id="new-password"
+                  class="app-input"
+                  placeholder="Mínimo 10 caracteres (1 letra y 1 número)"
+                  required
+                />
+                <span class="field-hint">Mínimo 10 caracteres, al menos una letra y un número.</span>
+              </div>
+
+              <div class="option-field">
+                <label for="confirm-new-password" class="field-label">Confirmar nueva contraseña</label>
+                <input
+                  type="password"
+                  id="confirm-new-password"
+                  class="app-input"
+                  placeholder="Repite la nueva contraseña"
+                  required
+                />
+              </div>
+
+              <button type="submit" id="btn-submit-change-password" class="btn-primary-action btn-full btn-auth-submit">
+                <span class="btn-text">Actualizar contraseña y acceder</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 1. VISTA ASISTENTE -->
+        <section id="view-asistente" class="view-panel">
+          <!-- Entrada de Texto -->
+          <div class="card-section">
+            <div class="section-label-row">
+              <div class="label-with-source">
+                <label for="input-text" class="field-label">Texto original</label>
+                <span id="source-indicator" class="source-indicator-badge hidden">Origen: selección de página</span>
+              </div>
+              <div class="header-tools-right">
+                <button type="button" id="btn-get-selection" class="btn-sm btn-outline-action" title="Capturar texto actualmente seleccionado en la pestaña activa">
+                  <span>📄 Obtener selección</span>
+                </button>
+                <span id="char-count" class="char-counter">0 / 5000</span>
+              </div>
+            </div>
+            <textarea
+              id="input-text"
+              class="app-textarea input-textarea"
+              placeholder="Escribe, pega o captura el texto que deseas procesar..."
+              maxlength="5000"
+              rows="4"
+            ></textarea>
+
+            <!-- Pregunta Guiada & Selector de Acción -->
+            <div class="guided-action-section">
+              <label class="field-sublabel guided-title">¿Qué quieres hacer con el texto?</label>
+              <div class="actions-button-grid">
+                <button type="button" class="action-btn btn-action-pill active" data-action="corregir" title="Corregir ortografía y gramática">
+                  <span class="action-icon">✏️</span>
+                  <span class="btn-text">Corregir</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="parafrasear" title="Reescribir con otro nivel de cambio">
+                  <span class="action-icon">🔄</span>
+                  <span class="btn-text">Parafrasear</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="profesionalizar" title="Transformar a lenguaje formal y técnico">
+                  <span class="action-icon">💼</span>
+                  <span class="btn-text">Profesionalizar</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="resumir" title="Reducir manteniendo lo esencial">
+                  <span class="action-icon">📝</span>
+                  <span class="btn-text">Resumir</span>
+                </button>
+                <button type="button" class="action-btn btn-action-pill" data-action="responder" title="Generar respuesta adecuada al usuario">
+                  <span class="action-icon">💬</span>
+                  <span class="btn-text">Responder</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel de Divulgación Progresiva (Configuración Contextual) -->
+            <div id="progressive-options-panel" class="progressive-options-panel">
+              <!-- Descripción Informativa Dinámica -->
+              <div id="action-info-box" class="action-info-box">
+                <p id="action-info-text" class="action-info-text">Corrige ortografía, gramática y puntuación sin cambiar el significado.</p>
+              </div>
+
+              <!-- Selector Dinámico de Nivel de Cambio (Solo Parafrasear) -->
+              <div id="group-paraphrase-level" class="option-field hidden">
+                <label for="select-paraphrase-level" class="field-sublabel">Nivel de cambio:</label>
+                <select id="select-paraphrase-level" class="app-select">
+                  <option value="suave">Ligero</option>
+                  <option value="medio" selected>Moderado</option>
+                  <option value="completo">Alto</option>
+                </select>
+                <span id="paraphrase-hint-text" class="option-hint-text">Reescribe el texto manteniendo claramente su significado.</span>
+              </div>
+
+              <!-- Selector Dinámico de Estilo de Parafraseo (Solo Parafrasear) -->
+              <div id="group-paraphrase-style" class="option-field hidden">
+                <label for="select-paraphrase-style" class="field-sublabel">Estilo:</label>
+                <select id="select-paraphrase-style" class="app-select">
+                  <option value="helpdesk" selected>🛠️ Mesa de Ayuda</option>
+                  <option value="formal">👔 Formal</option>
+                  <option value="institutional">🏢 Institucional</option>
+                  <option value="direct">⚡ Directo</option>
+                </select>
+                <span id="paraphrase-style-hint-text" class="option-hint-text">Breve y operativo para comunicaciones de soporte.</span>
+              </div>
+
+              <!-- Selector Dinámico de Estilo / Tono (Profesionalizar / Responder) -->
+              <div id="group-tone" class="option-field hidden">
+                <label id="label-tone" for="select-tone" class="field-sublabel">Estilo de redacción:</label>
+                <select id="select-tone" class="app-select">
+                  <option value="profesional" selected>Profesional</option>
+                  <option value="formal">Formal</option>
+                  <option value="amable">Amable</option>
+                  <option value="tecnico">Técnico</option>
+                  <option value="casual">Casual</option>
+                </select>
+                <span id="tone-hint-text" class="option-hint-text">Tono sobrio y corporativo estándar para soporte técnico.</span>
+              </div>
+
+              <!-- Botón Principal de Ejecución -->
+              <button type="button" id="btn-process-ai" class="btn-primary-action btn-full btn-process-main">
+                <span class="btn-text">⚡ Procesar con IA</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Indicador de Carga -->
+          <div id="loading-indicator" class="loading-bar-container">
+            <div class="spinner"></div>
+            <span class="loading-text">Procesando texto con IA...</span>
+          </div>
+
+          <!-- Sección de Resultado -->
+          <div id="result-section" class="card-section result-box">
+            <div class="section-label-row">
+              <label for="result-text" class="field-label result-label">Resultado</label>
+              <span class="status-pill-ready">Listo</span>
+            </div>
+            <textarea
+              id="result-text"
+              class="app-textarea result-textarea"
+              placeholder="El resultado procesado aparecerá aquí..."
+              rows="5"
+            ></textarea>
+
+            <!-- Acciones del Resultado -->
+            <div class="result-actions-row">
+              <div class="result-left-actions">
+                <button type="button" id="btn-copy-result" class="btn-outline">
+                  <span>Copiar</span>
+                </button>
+                <button type="button" id="btn-replace-selection" class="btn-primary-action btn-sm hidden" title="Reemplazar directamente el texto seleccionado en la página web">
+                  <span>↩ Reemplazar</span>
+                </button>
+                <button type="button" id="btn-save-result" class="btn-outline">
+                  <span>Guardar</span>
+                </button>
+                <button type="button" id="btn-regenerate" class="btn-outline">
+                  <span>Regenerar</span>
+                </button>
+              </div>
+              <button type="button" id="btn-clear-all" class="btn-danger-link">
+                <span>Limpiar</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 1.5. VISTA TEXTOS RÁPIDOS -->
+        <section id="view-textos-rapidos" class="view-panel">
+          <div class="panel-intro-header panel-header-flex">
+            <div>
+              <h2 class="view-heading">Textos Rápidos</h2>
+              <p class="view-subheading">Guarda respuestas y textos que utilizas frecuentemente en tus tickets.</p>
+            </div>
+            <button type="button" id="btn-new-quick-text" class="btn-primary-action btn-sm">
+              <span>+ Nuevo texto</span>
+            </button>
+          </div>
+
+          <div class="search-box-wrapper">
+            <input
+              type="search"
+              id="quick-texts-search"
+              class="app-input-search"
+              placeholder="Buscar por título, cabecera, cuerpo o solución..."
+            />
+          </div>
+
+          <!-- Filtros de Textos Rápidos -->
+          <div id="quick-texts-filters" class="categories-chips-container quick-texts-filter-chips">
+            <button type="button" class="chip-btn chip-active" data-filter="all">Todos</button>
+            <button type="button" class="chip-btn" data-filter="mine">Mis textos</button>
+            <button type="button" class="chip-btn" data-filter="shared">Compartidos</button>
+          </div>
+
+          <!-- Estado Vacío -->
+          <div id="quick-texts-empty" class="empty-state-box hidden">
+            <div class="empty-state-icon">📋</div>
+            <h3 class="empty-state-title">No hay textos rápidos que mostrar.</h3>
+            <p class="empty-state-desc">Crea textos con cabecera, cuerpo y solución listos para copiar en un solo clic.</p>
+            <button type="button" id="btn-create-first-quick-text" class="btn-outline btn-sm">
+              <span>+ Crear primer texto</span>
+            </button>
+          </div>
+
+          <!-- Listado de Tarjetas -->
+          <div id="quick-texts-list" class="quick-texts-list-container"></div>
+        </section>
+
+        <!-- 3. VISTA HISTORIAL -->
+        <section id="view-historial" class="view-panel">
+          <div class="panel-intro-header panel-header-flex">
+            <div>
+              <h2 class="view-heading">Historial de Consultas</h2>
+              <p class="view-subheading">Registro de tus transformaciones realizadas con IA.</p>
+            </div>
+            <button type="button" id="btn-clear-history" class="btn-danger-outline btn-sm">
+              Vaciar local
+            </button>
+          </div>
+
+          <div id="history-items-list" class="cards-list-container"></div>
+        </section>
+
+        <!-- 4. VISTA GUARDADOS -->
+        <section id="view-guardados" class="view-panel">
+          <div class="panel-intro-header">
+            <h2 class="view-heading">Textos y Plantillas Guardadas</h2>
+            <p class="view-subheading">Acceso rápido a tus textos preferidos para soporte.</p>
+          </div>
+
+          <div id="saved-items-list" class="cards-list-container"></div>
+        </section>
+
+        <!-- 5. VISTA CONFIGURACIÓN -->
+        <section id="view-configuracion" class="view-panel">
+          <div class="panel-intro-header">
+            <h2 class="view-heading">Configuración General</h2>
+            <p class="view-subheading">Personaliza las preferencias de la extensión.</p>
+          </div>
+
+          <div class="card-section settings-card">
+            <div class="setting-item">
+              <label for="settings-default-tone" class="setting-label">Tono predeterminado</label>
+              <p class="setting-description">Tono aplicado por defecto al abrir el Asistente.</p>
+              <select id="settings-default-tone" class="app-select">
+                <option value="profesional">Profesional</option>
+                <option value="formal">Formal</option>
+                <option value="amable">Amable</option>
+                <option value="tecnico">Técnico</option>
+                <option value="casual">Casual</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="settings-default-paraphrase" class="setting-label">Nivel de parafraseo predeterminado</label>
+              <p class="setting-description">Intensidad de modificación léxica sugerida.</p>
+              <select id="settings-default-paraphrase" class="app-select">
+                <option value="suave">Suave</option>
+                <option value="medio">Medio</option>
+                <option value="completo">Completo</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="settings-theme" class="setting-label">Tema visual</label>
+              <p class="setting-description">Apariencia de la interfaz del panel lateral.</p>
+              <select id="settings-theme" class="app-select">
+                <option value="system">Adaptar al sistema</option>
+                <option value="light">Modo Claro</option>
+                <option value="dark">Modo Oscuro</option>
+              </select>
+            </div>
+
+            <div class="setting-item setting-switch-row">
+              <div>
+                <label for="settings-confirm-clear" class="setting-label">Confirmar antes de limpiar</label>
+                <p class="setting-description">Muestra un mensaje de advertencia antes de borrar el texto y resultado.</p>
+              </div>
+              <input type="checkbox" id="settings-confirm-clear" class="app-checkbox" />
+            </div>
+
+            <div class="settings-actions">
+              <button type="button" id="btn-save-settings" class="btn-primary-action btn-full">
+                Guardar preferencias
+              </button>
+            </div>
+          </div>
+
+          <!-- Diagnóstico de Backend Local -->
+          <div class="card-section backend-diag-card">
+            <div class="setting-item">
+              <h3 class="setting-label">Diagnóstico de Conexión Backend</h3>
+              <p class="setting-description">Prueba la comunicación directa entre el Side Panel y el servidor Express local en <code>http://localhost:3000</code>.</p>
+            </div>
+            <div class="backend-diag-actions">
+              <button type="button" id="btn-test-backend" class="btn-outline btn-full">
+                <span>⚡ Probar backend</span>
+              </button>
+            </div>
+            <div id="backend-status-box" class="backend-status-box">
+              <span class="backend-status-text">Estado: Esperando prueba de conexión...</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Pie de página -->
+      <footer class="app-footer">
+        <span>Mesa de Ayuda v1.0.0 &bull; Fase 6 (Autenticación y Roles)</span>
+      </footer>
+    </div>
+
+    <!-- Modal Crear/Editar Texto Rápido -->
+    <div id="modal-quick-text" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-quick-text-title" class="modal-title">Nuevo Texto Rápido</h3>
+          <button type="button" id="btn-close-quick-text-modal" class="btn-modal-close" title="Cerrar modal">&times;</button>
+        </div>
+        <form id="form-quick-text" class="modal-form" novalidate>
+          <div class="option-field">
+            <label for="quick-text-title" class="field-label">Título descriptivo</label>
+            <input
+              type="text"
+              id="quick-text-title"
+              class="app-input"
+              placeholder="Ej. Desbloqueo de usuario de red"
+              maxlength="150"
+              required
+            />
+          </div>
+
+          <div class="option-field">
+            <label for="quick-text-header" class="field-label">Cabecera</label>
+            <textarea
+              id="quick-text-header"
+              class="app-textarea modal-textarea-sm"
+              placeholder="Ej. [Usuario de red] Usuario solicita desbloqueo de Red"
+              maxlength="1000"
+              rows="2"
+              required
+            ></textarea>
+            <span class="option-hint-text">Texto breve de encabezado o tipificación.</span>
+          </div>
+
+          <div class="option-field">
+            <label for="quick-text-body" class="field-label">Cuerpo</label>
+            <textarea
+              id="quick-text-body"
+              class="app-textarea modal-textarea-md"
+              placeholder="Ej. El usuario reporta que su cuenta de red se encuentra bloqueada."
+              maxlength="5000"
+              rows="3"
+              required
+            ></textarea>
+            <span class="option-hint-text">Detalle completo de la solicitud o incidencia.</span>
+          </div>
+
+          <div class="option-field">
+            <label for="quick-text-solution" class="field-label">Solución</label>
+            <textarea
+              id="quick-text-solution"
+              class="app-textarea modal-textarea-sm"
+              placeholder="Ej. Se atendió lo solicitado."
+              maxlength="5000"
+              rows="2"
+            ></textarea>
+            <span class="option-hint-text">Respuesta final, acción realizada o resolución.</span>
+          </div>
+
+          <div class="option-field option-field-checkbox">
+            <label class="checkbox-container">
+              <input type="checkbox" id="quick-text-is-shared" />
+              <span class="checkbox-label-text">👥 Compartir con el equipo</span>
+            </label>
+            <span class="option-hint-text">Permite que todos los miembros del equipo puedan ver y copiar este texto.</span>
+          </div>
+
+          <div class="modal-actions-row">
+            <button type="button" id="btn-cancel-quick-text" class="btn-outline">
+              Cancelar
+            </button>
+            <button type="submit" id="btn-submit-quick-text" class="btn-primary-action">
+              Guardar texto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Confirmación de Eliminación -->
+    <div id="modal-delete-quick-text" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+          <h3 class="modal-title">¿Eliminar este texto rápido?</h3>
+          <button type="button" id="btn-close-delete-quick-text-modal" class="btn-modal-close" title="Cerrar modal">&times;</button>
+        </div>
+        <div class="modal-body-content">
+          <p class="modal-warning-text">
+            Se eliminará permanentemente <strong id="delete-quick-text-name">este texto rápido</strong>. Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="modal-actions-row">
+          <button type="button" id="btn-cancel-delete-quick-text" class="btn-outline">
+            Cancelar
+          </button>
+          <button type="button" id="btn-confirm-delete-quick-text" class="btn-danger-link btn-danger-solid">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor dinámico de notificaciones -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  </body>
+</html>

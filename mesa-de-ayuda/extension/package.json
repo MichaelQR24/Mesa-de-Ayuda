@@ -1,6 +1,6 @@
 {
   "name": "mesa-de-ayuda-extension",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Extensión de Chrome para asistencia de soporte técnico - Mesa de Ayuda",
   "type": "module",
   "scripts": {

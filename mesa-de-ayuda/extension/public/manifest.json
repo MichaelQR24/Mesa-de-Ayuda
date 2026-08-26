@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Mesa de Ayuda",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Asistente de redacción inteligente y mesa de ayuda para soporte técnico",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtbGzMnD5I8+y2abFn+ewpHUkfjxdEpvoqBpDXKVoTS2pYZ4PYnxPoQIUxHDm24Opo6QeNRD0MortU1cDosvf8Z6SLz2o/GFcN8jJBzH2IRfTS41ZwKgM62+vZhtEEqHOYNYRBx3/0WbnVbsf1LZCr0d1CoAxFqXn1XlkVRRF7XXwO2oUiBck8iJ2pHlmQHZhjYl45pCPc9rbe2Z642Et43vOuvmDXh3JQjTkQIqPTLvgWUTCQQOsH0Up6K2Eer1s4u4j9oNbM6gXhIPWtBhsTPU7WAe570xiD735uHnr2S17ZPaStJtKzV0f9o5aKHIEpWgaUi9i5eePO84IxEMHLQIDAQAB",
   "permissions": [
     "sidePanel",
     "storage",
